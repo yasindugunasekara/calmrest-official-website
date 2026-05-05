@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react"; 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -17,16 +17,24 @@ import Register from "./pages/auth/Register";
 import RoomDetails from "./pages/RoomDetails";
 import NotFound from "./pages/NotFound"; // 404 Page
 import { LanguageProvider } from "./contexts/LanguageContext";
+import ReactGA from "react-ga4";
+
+ReactGA.initialize("G-W6VFYS47F8");
 
 // ✅ Layout wrapper: shows/hides Navbar and Footer depending on route
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
+  useEffect(() => {
+    ReactGA.send({ hitType: "pageview", page: location.pathname });
+  }, [location.pathname]); 
+
   // Hide Navbar/Footer on specific routes
   const hideLayout =
     location.pathname === "/login" ||
     location.pathname === "/register" ||
-    location.pathname === "/404";
+    location.pathname === "/404" ||
+    location.pathname.startsWith("/rooms/"); 
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
