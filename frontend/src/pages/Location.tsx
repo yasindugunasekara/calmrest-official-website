@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { MapPin, Plane, Car, Utensils, ShoppingBag, Camera, Clock, Phone, Mail, Waves, Bike } from 'lucide-react';
+import { trackEvent } from '../utils/analytics';
 
 const Location = () => {
  useEffect(() => {
@@ -141,7 +142,13 @@ const Location = () => {
           <div className="text-center mt-4">
             <button
               className="bg-gold text-white px-6 py-2 rounded hover:bg-opacity-90 transition-colors"
-              onClick={() => window.open('https://www.google.com/maps/place/Calm+Rest/@5.9624924,80.3948997,17z/data=!4m9!3m8!1s0x3ae114e826db1595:0x7689ea709c4b1cf2!5m2!4m1!1i2!8m2!3d5.9624924!4d80.3974746!16s%2Fg%2F11cn2zv5kz?entry=ttu&g_ep=EgoyMDI1MDkxNy4wIKXMDSoASAFQAw%3D%3D', '_blank')}
+              onClick={() => {
+                trackEvent("view_map", { map_service: "google_maps" });
+                window.open(
+                  "https://www.google.com/maps/place/Calm+Rest/@5.9624924,80.3948997,17z/data=!4m9!3m8!1s0x3ae114e826db1595:0x7689ea709c4b1cf2!5m2!4m1!1i2!8m2!3d5.9624924!4d80.3974746!16s%2Fg%2F11cn2zv5kz?entry=ttu&g_ep=EgoyMDI1MDkxNy4wIKXMDSoASAFQAw%3D%3D",
+                  "_blank"
+                );
+              }}
             >
               Open in Google Maps
             </button>

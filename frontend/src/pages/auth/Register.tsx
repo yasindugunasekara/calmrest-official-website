@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { trackEvent } from "../../utils/analytics";
 
 const countries = [
   "United States", "Canada", "United Kingdom", "Australia", "India", "Germany",
@@ -63,6 +64,7 @@ const Register: React.FC = () => {
       const data = await res.json();
 
       if (res.ok) {
+        trackEvent("sign_up", { method: "email" });
         alert("Registration Successful!");
         console.log("User registered:", data);
 

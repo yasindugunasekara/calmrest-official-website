@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 import axios from "axios";
+import { trackEvent } from "../utils/analytics";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -31,6 +32,7 @@ const Contact = () => {
     setSuccess(false);
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/messages`, formData);
+      trackEvent("generate_lead", { form_type: "contact" });
       setSuccess(true);
       setFormData({
         fullName: "",

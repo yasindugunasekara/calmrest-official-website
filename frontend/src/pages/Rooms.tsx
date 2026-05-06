@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Star, Bed, Users, Bath } from "lucide-react";
-
-
+import { useSectionTracking } from "../hooks/useSectionTracking";
+import { trackEvent, trackEcommerceEvent } from "../utils/analytics";
 
 const Rooms = () => {
   const [rooms, setRooms] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const navigate = useNavigate();
+
+  // Section Tracking
+  const filterRef = useSectionTracking('Room Categories Filter');
+  const roomGridRef = useSectionTracking('Rooms Grid');
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -16,6 +22,11 @@ const Rooms = () => {
       .then((res) => res.json())
       .then((data) => {
         setRooms(data);
+
+        // Track GA4 Ecommerce View Item List
+        trackEcommerceEvent('view_item_list', data, {
+          item_list_name: 'Main Rooms Page'
+        });
 
         // Generate categories dynamically from DB
         const uniqueCategories = [
@@ -29,6 +40,11 @@ const Rooms = () => {
       })
       .catch((err) => console.error("Error fetching rooms:", err));
   }, []);
+
+  const handleCategorySelect = (categoryId: string, categoryName: string) => {
+    setSelectedCategory(categoryId);
+    trackEvent('filter_rooms', { category_name: categoryName });
+  };
 
   const filteredRooms =
     selectedCategory === "all"
@@ -58,12 +74,12 @@ const Rooms = () => {
       </section>
 
       {/* Filter Tabs */}
-      <section className="py-8">
+      <section ref={filterRef as any} className="py-8">
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-2">
           {categories.map((category) => (
             <button
               key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
+              onClick={() => handleCategorySelect(category.id, category.name)}
               className={`px-6 py-3 rounded font-medium transition-all duration-300 relative ${
                 selectedCategory === category.id
                   ? "text-gold"
@@ -80,7 +96,7 @@ const Rooms = () => {
       </section>
 
       {/* Rooms Grid */}
-      <section className="py-16">
+      <section ref={roomGridRef as any} className="py-16">
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredRooms.map((room) => (
             <div
@@ -165,7 +181,8 @@ const Rooms = () => {
             <button
               className="flex-1 bg-gold text-white py-2 px-4 rounded hover:bg-opacity-90 transition-all duration-300 font-medium text-sm"
               onClick={() => {
-                window.location.href = "/login";
+                trackEvent('cta_click', { button_name: 'Room Card Book Now', room_name: room.name });
+                navigate("/login");
               }}
             >
               Book Now
@@ -173,7 +190,8 @@ const Rooms = () => {
             <button 
               className="px-4 py-2 border border-gold text-gold rounded hover:bg-gold hover:text-white transition-all duration-300 text-sm"
               onClick={() => {
-                window.location.href = `/rooms/${room._id}`;
+                trackEvent('cta_click', { button_name: 'Room Card Details', room_name: room.name });
+                navigate(`/rooms/${room._id}`);
               }}
             >
               Details
@@ -189,3 +207,4 @@ const Rooms = () => {
 };
 
 export default Rooms;
+

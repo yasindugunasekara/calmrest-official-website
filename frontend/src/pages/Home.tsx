@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight, Star, Wifi, Car, Coffee, Dumbbell, Utensils, Waves, ParkingCircle,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSectionTracking } from '../hooks/useSectionTracking';
+import { trackEvent } from '../utils/analytics';
 
 const iconMap = {
   Wifi: <Wifi size={16} />,
@@ -17,8 +20,16 @@ const iconMap = {
 
 const Home = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Section Tracking
+  const heroRef = useSectionTracking('Hero');
+  const aboutRef = useSectionTracking('About Teaser');
+  const featuredRef = useSectionTracking('Featured Rooms');
+  const servicesRef = useSectionTracking('Services');
+  const testimonialsRef = useSectionTracking('Testimonials Teaser');
 
   useEffect(() => window.scrollTo({ top: 0, behavior: 'smooth' }), []);
 
@@ -49,7 +60,7 @@ const Home = () => {
   return (
     <div className="min-h-screen w-full overflow-hidden">
       {/* 🌅 Hero Section */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center text-white px-6 md:px-10">
+      <section ref={heroRef as any} className="relative min-h-[90vh] flex flex-col items-center justify-center text-center text-white px-6 md:px-10">
         <div
           className="absolute inset-0 bg-cover bg-center bg-fixed"
           style={{
@@ -68,17 +79,19 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               className="bg-gold text-white px-10 sm:px-14 py-3 sm:py-4 text-base sm:text-lg font-medium hover:bg-opacity-90 rounded transition-transform duration-300 hover:scale-105"
-              onClick={() => (window.location.href = "/login")}
+              onClick={() => {
+                trackEvent('cta_click', { button_name: 'Hero Book Now', target_url: '/login' });
+                navigate("/login");
+              }}
             >
               {t("bookNow")}
             </button>
             <button
               className="border-2 border-white text-white px-10 sm:px-14 py-3 sm:py-4 text-base sm:text-lg font-medium hover:bg-white hover:text-navy transition-all rounded"
-              onClick={() =>
-                window.open(
-                  "/Testimonials"
-                )
-              }
+              onClick={() => {
+                trackEvent('cta_click', { button_name: 'Hero Learn More', target_url: '/Testimonials' });
+                navigate("/Testimonials");
+              }}
             >
               {t("learnMore")}
             </button>
@@ -86,7 +99,7 @@ const Home = () => {
         </div>
       </section>
       {/* 🏨 About Section */}
-      <section className="py-16 md:py-20 bg-white">
+      <section ref={aboutRef as any} className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
@@ -115,7 +128,11 @@ const Home = () => {
 
               <button
                 className="bg-gold text-white px-6 sm:px-8 py-3 rounded hover:bg-opacity-90 transition-all duration-300 font-medium"
-                onClick={() => (window.location.href = "/about")}
+                onClick={() => {
+                  trackEvent('cta_click', { button_name: 'About Learn More', target_url: '/about' });
+                  navigate("/about");
+                  }}
+
               >
                 {t("learnMore")}
               </button>
@@ -127,23 +144,12 @@ const Home = () => {
                 alt="Hotel Interior"
                 className="rounded-lg shadow-lg w-full object-cover"
               />
-              {/* <div className="absolute -bottom-6 right-0 bg-white p-5 rounded-lg shadow-lg w-max mx-auto">
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="flex text-gold">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} fill="currentColor" size={18} />
-                    ))}
-                  </div>
-                  <span className="text-lg font-semibold">4.9/5</span>
-                </div>
-                <p className="text-gray-600 mt-1 text-center">Guest Rating</p>
-              </div> */}
             </div>
           </div>
         </div>
       </section>
       {/* ✅ Updated Featured Rooms Section (Fetch from MongoDB) */}{" "}
-      <section className="py-20 bg-cream">
+      <section ref={featuredRef as any} className="py-20 bg-cream">
         {" "}
         <div className="max-w-7xl mx-auto px-4">
           {" "}
@@ -210,9 +216,10 @@ const Home = () => {
             <button
               className="bg-navy text-white px-8 py-3 rounded hover:bg-opacity-90 transition-all duration-300 font-medium inline-flex items-center space-x-2"
               onClick={() => {
+                trackEvent('cta_click', { button_name: 'View All Rooms', target_url: '/rooms' });
                 window.scrollTo({ top: 0, behavior: "auto" });
                 setTimeout(() => {
-                  window.location.href = "/rooms";
+                  navigate("/rooms");
                 }, 500);
               }}
             >
@@ -223,7 +230,7 @@ const Home = () => {
         </div>{" "}
       </section>
       {/* 💼 Services */}
-      <section className="py-16 md:py-20 bg-white">
+      <section ref={servicesRef as any} className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-navy font-serif">
             {t("ourServices")}
@@ -254,7 +261,7 @@ const Home = () => {
         </div>
       </section>
       {/* 💬 Testimonials */}
-      <section className="py-16 md:py-20 bg-gold text-white">
+      <section ref={testimonialsRef as any} className="py-16 md:py-20 bg-gold text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 font-serif">
             What Our Guests Say
@@ -294,7 +301,10 @@ const Home = () => {
 
           <button
             className="mt-8 bg-navy text-white px-6 sm:px-8 py-3 rounded hover:bg-opacity-90 transition-all duration-300 font-medium inline-flex items-center space-x-2"
-            onClick={() => (window.location.href = "/testimonials")}
+            onClick={() => {
+              trackEvent('cta_click', { button_name: 'Home Read More Reviews', target_url: '/testimonials' });
+              navigate("/testimonials");
+            }}
           >
             <span>Read More Reviews</span>
             <ArrowRight size={18} />
@@ -306,3 +316,4 @@ const Home = () => {
 };
 
 export default Home;
+

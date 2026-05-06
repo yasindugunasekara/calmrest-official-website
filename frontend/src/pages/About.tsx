@@ -1,7 +1,12 @@
 import React, { useEffect } from 'react';
 import { Award, Users, Clock, Shield, Leaf, Heart } from 'lucide-react';
+import { useSectionTracking } from '../hooks/useSectionTracking';
 
 const About = () => {
+  // Section Tracking
+  const storyRef = useSectionTracking('Our Story');
+  const valuesRef = useSectionTracking('Core Values');
+
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -88,7 +93,7 @@ const About = () => {
       </section>
 
       {/* Story Section */}
-      <section className="py-20">
+      <section ref={storyRef as any} className="py-20">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>

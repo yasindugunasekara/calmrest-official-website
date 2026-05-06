@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
 
 interface Testimonial {
@@ -14,6 +15,7 @@ interface Testimonial {
 }
 
 const Testimonials: React.FC = () => {
+  const navigate = useNavigate();
   // Initialize testimonials as an empty array to avoid undefined errors.
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,13 +157,13 @@ const Testimonials: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               className="bg-gold text-white px-8 py-3 rounded hover:bg-opacity-90 transition-all duration-300 font-medium"
-              onClick={() => (window.location.href = '/write-review')}
+              onClick={() => navigate('/write-review')}
             >
               Write a Review
             </button>
             <button
               className="border-2 border-white text-white px-8 py-3 rounded hover:bg-white hover:text-navy transition-all duration-300 font-medium"
-              onClick={() => (window.location.href = '/login')}
+              onClick={() => navigate('/login')}
             >
               Book Your Stay
             </button>

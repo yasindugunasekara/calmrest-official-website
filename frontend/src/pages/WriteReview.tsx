@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { categories } from "../data/roomsData";
+import { trackEvent } from "../utils/analytics";
 
 const WriteReview = () => {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [country, setCountry] = useState("");
   const [review, setReview] = useState("");
@@ -64,6 +67,7 @@ const WriteReview = () => {
         throw new Error("Failed to submit review");
       }
 
+      trackEvent("submit_review", { room_type: roomType, rating: rating });
       const data = await res.json();
       console.log("Review saved:", data);
 

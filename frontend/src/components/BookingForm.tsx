@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { trackEcommerceEvent } from "../utils/analytics";
 
 interface Room {
   _id: string;
@@ -62,6 +63,12 @@ const BookingForm: React.FC = () => {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const selectedRoom = rooms.find((r) => r.name === roomType);
+    trackEcommerceEvent("begin_checkout", selectedRoom ? [selectedRoom] : [], {
+      value: totalPrice,
+      currency: "USD",
+    });
+
     const bookingData = {
       firstName,
       lastName,
@@ -83,6 +90,11 @@ const BookingForm: React.FC = () => {
 
       const data = await res.json();
       if (data.success) {
+        trackEcommerceEvent("purchase", selectedRoom ? [selectedRoom] : [], {
+          transaction_id: data.bookingId || "temp_id_" + Date.now(),
+          value: totalPrice,
+          currency: "USD",
+        });
         alert("Booking submitted successfully!");
         setFirstName("");
         setLastName("");

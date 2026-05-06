@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { signInWithGoogle } from "../../firebase"; // ✅ import Firebase helper
+import { trackEvent } from "../../utils/analytics";
 import axios from "axios";
 
 const Login = () => {
@@ -27,6 +28,7 @@ const Login = () => {
       const data = await res.json();
 
       if (res.ok) {
+        trackEvent("login", { method: "email" });
         setSuccess(true);
         document.body.classList.add("fade-out");
         localStorage.setItem("user", JSON.stringify(data.user));

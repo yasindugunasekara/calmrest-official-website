@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Bath, Wifi, Car, Lock, ConciergeBell, Luggage } from "lucide-react";
+import { trackEcommerceEvent, trackEvent } from "../utils/analytics";
 
 type Feature = {
   name: string;
@@ -36,6 +37,12 @@ const RoomDetails: React.FC = () => {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms/${id}`);
         const data = await res.json();
         setRoom(data);
+
+        // Track GA4 Ecommerce View Item
+        trackEcommerceEvent("view_item", [data], {
+          currency: "USD",
+          value: data.price,
+        });
       } catch (err) {
         console.error(err);
       } finally {
@@ -258,7 +265,10 @@ const RoomDetails: React.FC = () => {
         </button>
           <button
             className="bg-gold text-white px-6 md:px-8 py-2 md:py-3 rounded-lg hover:bg-gold/80 transition-all w-full sm:w-auto text-center"
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              trackEvent("cta_click", { button_name: "Room Details Book", room_name: room.name });
+              navigate("/login");
+            }}
           >
             Book
           </button>

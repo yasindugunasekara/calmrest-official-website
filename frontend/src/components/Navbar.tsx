@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, Mail, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { trackEvent } from '../utils/analytics';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
 
   const languages = [
@@ -97,23 +99,33 @@ const Navbar = () => {
                 <Link
                   key={item.name}
                   to={item.href}
+                  onClick={() =>
+                    trackEvent("nav_click", {
+                      link_name: item.name,
+                      target_url: item.href,
+                    })
+                  }
                   className={`text-sm font-medium transition-colors hover:text-gold ${
                     location.pathname === item.href
-                      ? 'text-gold border-b-2 border-gold'
-                      : 'text-navy'
+                      ? "text-gold border-b-2 border-gold"
+                      : "text-navy"
                   }`}
                 >
                   {item.name}
                 </Link>
               ))}
-                <button
+              <button
                 className="bg-gold text-white px-6 py-2 rounded hover:bg-opacity-90 transition-all duration-300 font-medium"
                 onClick={() => {
-                  window.location.href = '/Login';
-              }}
-                >
-                {t('bookNow')}
-                </button> 
+                  trackEvent("cta_click", {
+                    button_name: "Navbar Book Now",
+                    target_url: "/Login",
+                  });
+                  navigate("/Login");
+                }}
+              >
+                {t("bookNow")}
+              </button>
             </div>
 
             {/* Mobile menu button */}
@@ -150,7 +162,7 @@ const Navbar = () => {
                 <button
                   className="w-full bg-gold text-white px-6 py-2 rounded hover:bg-opacity-90 transition-all duration-300 font-medium"
                    onClick={() => {
-              window.location.href = '/login';
+              navigate('/login');
               }}
                 >
                   {t('bookNow')}
