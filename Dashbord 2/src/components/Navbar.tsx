@@ -25,6 +25,15 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;
 
   // Time conversion helpers
+  const getTimestampFromId = (id: string) => {
+    try {
+      if (!id || id.length < 8) return 0;
+      return parseInt(id.substring(0, 8), 16) * 1000;
+    } catch (e) {
+      return 0;
+    }
+  };
+
   const timeAgoFromId = (id: string) => {
     try {
       if (!id || id.length < 8) return "Recently";
@@ -80,8 +89,16 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
 
         const derivedNotifications: Notification[] = [];
 
+        // Sort arrays descending by creation time
+        const sortedBookings = [...bookingsList].sort((a: any, b: any) => getTimestampFromId(b._id) - getTimestampFromId(a._id));
+        const sortedMessages = [...messagesList].sort((a: any, b: any) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : getTimestampFromId(a._id);
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : getTimestampFromId(b._id);
+          return timeB - timeA;
+        });
+
         // Add bookings as notifications (up to 3 recent bookings)
-        bookingsList.slice(0, 3).forEach((b: any) => {
+        sortedBookings.slice(0, 3).forEach((b: any) => {
           derivedNotifications.push({
             id: `b-${b._id}`,
             type: 'booking',
@@ -94,7 +111,7 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
         });
 
         // Add messages as notifications (up to 3 recent messages)
-        messagesList.slice(0, 3).forEach((m: any) => {
+        sortedMessages.slice(0, 3).forEach((m: any) => {
           derivedNotifications.push({
             id: `m-${m._id}`,
             type: 'message',

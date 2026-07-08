@@ -1,5 +1,6 @@
 const express = require("express");
 const Booking = require("../models/Booking"); // Your Booking model
+const { sendBookingConfirmation } = require("../config/mailer");
 const router = express.Router();
 
 // Create new booking
@@ -7,6 +8,9 @@ router.post("/", async (req, res) => {
   try {
     const booking = new Booking(req.body);
     await booking.save();
+
+    // Send confirmation email asynchronously (does not block client response)
+    sendBookingConfirmation(booking);
 
     // ✅ Return success message and booking data
     res.status(201).json({

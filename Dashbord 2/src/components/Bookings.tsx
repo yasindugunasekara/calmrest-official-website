@@ -83,6 +83,17 @@ export default function Bookings() {
     return searchMatch && typeMatch;
   });
 
+  const getTimestampFromId = (id: string) => {
+    try {
+      if (!id || id.length < 8) return 0;
+      return parseInt(id.substring(0, 8), 16) * 1000;
+    } catch(e) {
+      return 0;
+    }
+  };
+
+  const sortedFilteredBookings = [...filteredBookings].sort((a, b) => getTimestampFromId(b._id) - getTimestampFromId(a._id));
+
   return (
     <div className="space-y-6">
       
@@ -154,8 +165,8 @@ export default function Bookings() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredBookings.length > 0 ? (
-                filteredBookings.map((b) => {
+              ) : sortedFilteredBookings.length > 0 ? (
+                sortedFilteredBookings.map((b) => {
                   // Determine beautiful status colors
                   const statusColors = {
                     Confirmed: "bg-emerald-50 text-emerald-700 border-emerald-100",
