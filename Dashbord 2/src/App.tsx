@@ -40,10 +40,10 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<Navigate to="/dashboard" replace />}
+          element={<Navigate to="/admin/dashboard" replace />}
         />
         <Route
-          path="/dashboard"
+          path="/admin/dashboard"
           element={
             <DashboardLayout>
               <Dashboard />
@@ -51,7 +51,7 @@ function App() {
           }
         />
         <Route
-          path="/bookings"
+          path="/admin/bookings"
           element={
             <DashboardLayout>
               <Bookings />
@@ -59,7 +59,7 @@ function App() {
           }
         />
         <Route
-          path="/messages"
+          path="/admin/messages"
           element={
             <DashboardLayout>
               <Messages />
@@ -67,7 +67,7 @@ function App() {
           }
         />
         <Route
-          path="/rooms"
+          path="/admin/rooms"
           element={
             <DashboardLayout>
               <Rooms />
@@ -75,7 +75,7 @@ function App() {
           }
         />
         <Route
-          path="/users"
+          path="/admin/users"
           element={
             <DashboardLayout>
               <UsersPage />
@@ -83,7 +83,7 @@ function App() {
           }
         />
         <Route
-          path="/settings"
+          path="/admin/settings"
           element={
             <DashboardLayout>
               <SettingsPage />
@@ -91,7 +91,7 @@ function App() {
           }
         />
         <Route
-          path="/addregister"
+          path="/admin/addregister"
           element={
             
               <AdminRegister />
