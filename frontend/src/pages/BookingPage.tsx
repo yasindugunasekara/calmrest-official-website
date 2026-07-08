@@ -5,8 +5,8 @@ import BookingForm from "../components/BookingForm"; // adjust path if needed
 
 const BookingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
-      <BookingForm className="max-w-lg w-full" />
+    <div className="h-screen w-screen bg-cream flex flex-col justify-center items-center p-4 lg:p-6 overflow-y-auto lg:overflow-hidden">
+      <BookingForm />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { signInWithGoogle } from "../../firebase"; // ✅ import Firebase helper
 import { trackEvent } from "../../utils/analytics";
@@ -209,9 +210,9 @@ const Login = () => {
           {/* Register Link */}
           <p className="text-center text-sm text-gray-600 mt-6">
             Don’t have an account?{" "}
-            <a href="/register" className="text-gold hover:underline">
+            <Link to="/register" className="text-gold hover:underline">
               Register
-            </a>
+            </Link>
           </p>
         </div>
       </div>

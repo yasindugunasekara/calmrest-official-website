@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { trackEvent } from "../../utils/analytics";
 
 const countries = [
@@ -195,9 +196,9 @@ const Register: React.FC = () => {
 
         <p className="text-sm text-gray-600 text-center mt-4">
           Already have an account?{" "}
-          <a href="/login" className="text-gold font-semibold">
+          <Link to="/login" className="text-gold font-semibold">
             Login
-          </a>
+          </Link>
         </p>
       </div>
     </div>

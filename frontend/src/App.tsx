@@ -29,12 +29,14 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     ReactGA.send({ hitType: "pageview", page: location.pathname });
   }, [location.pathname]); 
 
-  // Hide Navbar/Footer on specific routes
+  // Hide Navbar/Footer on specific routes (case-insensitive)
+  const path = location.pathname.toLowerCase();
   const hideLayout =
-    location.pathname === "/login" ||
-    location.pathname === "/register" ||
-    location.pathname === "/404" ||
-    location.pathname.startsWith("/rooms/"); 
+    path === "/login" ||
+    path === "/register" ||
+    path === "/404" ||
+    path === "/book" ||
+    path.startsWith("/rooms/"); 
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

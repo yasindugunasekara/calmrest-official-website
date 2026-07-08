@@ -1,8 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Star, Bed, Users, Bath } from "lucide-react";
+import {
+  Star,
+  Bed,
+  Users,
+  Bath,
+  Maximize,
+  Shield,
+  Wine,
+  Tv,
+  Wind,
+  Coffee,
+  Utensils,
+  Waves,
+  Car,
+  Sparkles,
+  Phone,
+  ParkingCircle,
+  Wifi,
+  Dumbbell
+} from "lucide-react";
 import { useSectionTracking } from "../hooks/useSectionTracking";
 import { trackEvent, trackEcommerceEvent } from "../utils/analytics";
+
+const iconMap: Record<string, React.ReactNode> = {
+  Wifi: <Wifi size={16} />,
+  Car: <Car size={16} />,
+  Coffee: <Coffee size={16} />,
+  Dumbbell: <Dumbbell size={16} />,
+  Utensils: <Utensils size={16} />,
+  Waves: <Waves size={16} />,
+  ParkingCircle: <ParkingCircle size={16} />,
+  Parking: <Car size={16} />,
+  Star: <Star size={16} />,
+  Bed: <Bed size={16} />,
+  Users: <Users size={16} />,
+  Bath: <Bath size={16} />,
+  Tv: <Tv size={16} />,
+  Wind: <Wind size={16} />,
+  AirConditioning: <Wind size={16} />,
+  Shield: <Shield size={16} />,
+  Wine: <Wine size={16} />,
+  Phone: <Phone size={16} />,
+  Sparkles: <Sparkles size={16} />,
+  ConciergeBell: <Sparkles size={16} />,
+  Luggage: <Sparkles size={16} />,
+};
 
 const Rooms = () => {
   const [rooms, setRooms] = useState([]);
@@ -15,7 +58,13 @@ const Rooms = () => {
   const roomGridRef = useSectionTracking('Rooms Grid');
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const savedScroll = sessionStorage.getItem("roomsScrollPosition");
+    if (savedScroll) {
+      window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" as any });
+      sessionStorage.removeItem("roomsScrollPosition");
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
     // ✅ Fetch rooms from backend API
     fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms`)
@@ -40,6 +89,11 @@ const Rooms = () => {
       })
       .catch((err) => console.error("Error fetching rooms:", err));
   }, []);
+
+  const handleCardClick = (roomId: string) => {
+    sessionStorage.setItem("roomsScrollPosition", window.scrollY.toString());
+    navigate(`/rooms/${roomId}`);
+  };
 
   const handleCategorySelect = (categoryId: string, categoryName: string) => {
     setSelectedCategory(categoryId);
@@ -101,9 +155,10 @@ const Rooms = () => {
           {filteredRooms.map((room) => (
             <div
               key={room._id}
-              className="bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-500"
+              onClick={() => handleCardClick(room._id)}
+              className="snap-start scroll-mt-24 bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-2xl hover:border-gold/30 border border-transparent cursor-pointer transition-all duration-500 flex flex-col justify-between"
             >
-              {/* Room Card */}
+              {/* Room Card Image */}
               <div className="relative overflow-hidden">
                 <img
                   src={
@@ -112,91 +167,100 @@ const Rooms = () => {
                       : room.image ?? "https://via.placeholder.com/800x600?text=No+Image"
                   }
                   alt={room.name}
-                  className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute top-4 right-4 bg-gold text-white px-3 py-1 rounded-full font-semibold">
+                <div className="absolute top-4 right-4 bg-gold text-white px-3.5 py-1.5 rounded-full font-semibold shadow-md text-sm">
                   ${room.price}/night
                 </div>
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
+                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1 shadow-sm">
                   <Star fill="currentColor" className="text-gold w-4 h-4" />
-                  <span className="font-semibold text-sm">{room.rating}</span>
+                  <span className="font-bold text-navy text-sm">{room.rating}</span>
                 </div>
               </div>
 
-              <div className="p-6">
-          <h3 className="text-xl font-semibold mb-2 text-navy font-serif">
-            {room.name}
-          </h3>
-          <p className="text-gray-600 mb-4 text-sm line-clamp-2">
-            {room.description}
-          </p>
+              <div className="p-6 flex-grow flex flex-col justify-between">
+                <div>
+                  <h3 className="text-xl font-bold mb-2 text-navy font-serif group-hover:text-gold transition-colors duration-300">
+                    {room.name}
+                  </h3>
+                  <p className="text-gray-500 mb-4 text-xs sm:text-sm line-clamp-2 leading-relaxed">
+                    {room.description}
+                  </p>
 
-          {/* Details */}
-          <div className="grid grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
-            <div className="flex items-center space-x-1">
-              <Bed size={14} />
-              <span>{room.bed}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Users size={14} />
-              <span>{room.guests} Guests</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Bath size={14} />
-              <span>{room.size}</span>
-            </div>
-          </div>
+                  {/* Details Bar */}
+                  <div className="flex items-center justify-between border-t border-b border-gray-100 py-3 mb-4 text-xs sm:text-sm text-gray-600">
+                    <div className="flex items-center space-x-1.5">
+                      <Bed size={15} className="text-gold" />
+                      <span>{room.bed}</span>
+                    </div>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center space-x-1.5">
+                      <Users size={15} className="text-gold" />
+                      <span>{room.guests} Guests</span>
+                    </div>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center space-x-1.5">
+                      <Maximize size={15} className="text-gold" />
+                      <span>{room.size}</span>
+                    </div>
+                  </div>
 
-          {/* Features */}
-          <div className="flex flex-wrap gap-3 mb-4 text-sm">
-            {room.features.map((feature, index) => (
-              <div key={index} className="text-gold flex items-center space-x-1">
-                <span>{feature.icon}</span>
-                <span>{feature.name}</span>
-              </div>
-            ))}
-          </div>
+                  {/* Features */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {room.features?.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center space-x-1 text-xs bg-cream/70 text-navy px-2.5 py-1 rounded-md border border-gold/10 hover:border-gold/30 transition-all duration-300"
+                      >
+                        <span className="text-gold">{iconMap[feature.icon] || <Sparkles size={14} />}</span>
+                        <span className="font-semibold text-gray-700">{feature.name}</span>
+                      </div>
+                    ))}
+                  </div>
 
-          {/* Amenities */}
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2">
-              {room.amenities.slice(0, 3).map((amenity, index) => (
-                <span
-            key={index}
-            className="text-xs bg-cream px-2 py-1 rounded-full text-gray-600"
-                >
-            {amenity}
-                </span>
-              ))}
-              {room.amenities.length > 3 && (
-                <span className="text-xs text-gold">
-            +{room.amenities.length - 3} more
-                </span>
-              )}
-            </div>
-          </div>
+                  {/* Amenities */}
+                  <div className="mb-6">
+                    <div className="flex flex-wrap gap-1.5">
+                      {room.amenities?.slice(0, 3).map((amenity, index) => (
+                        <span
+                          key={index}
+                          className="text-[11px] font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-600"
+                        >
+                          {amenity}
+                        </span>
+                      ))}
+                      {room.amenities?.length > 3 && (
+                        <span className="text-[11px] font-medium text-gold bg-gold/5 px-2 py-0.5 rounded">
+                          +{room.amenities.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-          {/* Buttons */}
-          <div className="flex space-x-2">
-            <button
-              className="flex-1 bg-gold text-white py-2 px-4 rounded hover:bg-opacity-90 transition-all duration-300 font-medium text-sm"
-              onClick={() => {
-                trackEvent('cta_click', { button_name: 'Room Card Book Now', room_name: room.name });
-                navigate("/login");
-              }}
-            >
-              Book Now
-            </button>
-            <button 
-              className="px-4 py-2 border border-gold text-gold rounded hover:bg-gold hover:text-white transition-all duration-300 text-sm"
-              onClick={() => {
-                trackEvent('cta_click', { button_name: 'Room Card Details', room_name: room.name });
-                navigate(`/rooms/${room._id}`);
-              }}
-            >
-              Details
-            </button>
-          </div>
+                {/* Buttons */}
+                <div className="flex space-x-3 mt-auto">
+                  <button
+                    className="flex-1 bg-navy text-white py-2.5 px-4 rounded hover:bg-gold hover:text-navy transition-all duration-300 font-semibold text-xs uppercase tracking-wider"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      trackEvent('cta_click', { button_name: 'Room Card Book Now', room_name: room.name });
+                      navigate("/login");
+                    }}
+                  >
+                    Book Now
+                  </button>
+                  <button 
+                    className="px-5 py-2.5 border border-gold text-gold rounded hover:bg-gold hover:text-white transition-all duration-300 text-xs font-semibold uppercase tracking-wider"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      trackEvent('cta_click', { button_name: 'Room Card Details', room_name: room.name });
+                      handleCardClick(room._id);
+                    }}
+                  >
+                    Details
+                  </button>
+                </div>
               </div>
             </div>
           ))}

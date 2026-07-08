@@ -31,47 +31,6 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Top bar */}
-      <div className="bg-white text-navy py-1 px-4 text-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-6">
-            
-          </div>
-          
-          {/* Language Selector */}
-          <div className="relative">
-            <button
-              onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-              className="flex items-center space-x-2 hover:text-gold transition-colors"
-            >
-              <span>{currentLanguage?.flag}</span>
-              <span>{currentLanguage?.name}</span>
-              <ChevronDown size={14} />
-            </button>
-            
-            {isLanguageOpen && (
-              <div className="absolute right-0 top-full mt-2 bg-white text-navy shadow-lg rounded-md py-2 min-w-[120px] z-50">
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => {
-                      setLanguage(lang.code);
-                      setIsLanguageOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left hover:bg-cream flex items-center space-x-2 ${
-                      language === lang.code ? 'bg-cream text-gold' : ''
-                    }`}
-                  >
-                    <span>{lang.flag}</span>
-                    <span>{lang.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Main navbar */}
       <nav className="bg-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,9 +78,9 @@ const Navbar = () => {
                 onClick={() => {
                   trackEvent("cta_click", {
                     button_name: "Navbar Book Now",
-                    target_url: "/Login",
+                    target_url: "/login",
                   });
-                  navigate("/Login");
+                  navigate("/login");
                 }}
               >
                 {t("bookNow")}
