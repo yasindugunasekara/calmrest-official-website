@@ -198,7 +198,7 @@ const RoomDetails: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* Left Column: Media & Room details (Span 2) */}
-          <div className="lg:col-span-2 space-y-8 bg-white rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm">
+          <div className="lg:col-span-2 space-y-8 bg-white rounded-2xl border-0 md:border border-gray-100 p-6 md:p-8 shadow-sm">
             
             {/* Gallery Section */}
             <div>
@@ -374,7 +374,7 @@ const RoomDetails: React.FC = () => {
 
           {/* Right Column: Sticky Pricing/Booking widget */}
           <div className="lg:col-span-1 lg:sticky lg:top-24 self-start">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 md:p-8 space-y-6">
+            <div className="bg-white rounded-2xl border-0 md:border border-gray-100 shadow-lg p-6 md:p-8 space-y-6">
               
               {/* Card Header Title */}
               <div className="border-b border-gray-100 pb-4">
