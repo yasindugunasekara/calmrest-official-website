@@ -44,6 +44,21 @@ router.get("/", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+// Update booking status/details
+router.put("/:id", async (req, res) => {
+  try {
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!updatedBooking) {
+      return res.status(404).json({ success: false, error: "Booking not found" });
+    }
+    res.json({ success: true, booking: updatedBooking });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 module.exports = router;

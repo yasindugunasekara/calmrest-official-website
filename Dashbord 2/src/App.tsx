@@ -13,23 +13,20 @@ import AdminRegister from "./components/adminRegister";
 // Layout wrapper for dashboard pages
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [currentPage, setCurrentPage] = React.useState<string>("dashboard");
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen w-screen bg-gray-50 flex overflow-hidden font-sans">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
       />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Navbar setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50/50">{children}</main>
       </div>
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
