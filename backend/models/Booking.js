@@ -9,7 +9,6 @@ const bookingSchema = new mongoose.Schema({
   guests: { type: Number, required: true },
   roomType: { type: String, required: true },
   specialRequest: { type: String },
-  status: { type: String, default: "Pending" },
 });
 
 module.exports = mongoose.model("Booking", bookingSchema);
