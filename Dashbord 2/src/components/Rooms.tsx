@@ -443,11 +443,12 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
         },
         (error: unknown, result: any) => {
           if (!error && result && result.event === "success") {
+            const webpUrl = result.info.secure_url.replace(/\.[^/.]+$/, ".webp");
             setFormData((prev) => ({
               ...prev,
-              images: [...(prev.images || []), result.info.secure_url],
+              images: [...(prev.images || []), webpUrl],
             }));
-            console.log("✅ Uploaded:", result.info.secure_url);
+            console.log("✅ Uploaded (converted to WebP):", webpUrl);
           }
         }
       );
