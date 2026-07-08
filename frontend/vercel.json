@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/admin/:path*",
+      "destination": "https://hotel-managment-system-xqhu.vercel.app/dashboard/:path*"
+    }
   ]
 }
