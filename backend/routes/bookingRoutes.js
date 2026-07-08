@@ -48,6 +48,8 @@ router.get("/", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
 // Update booking status/details
 router.put("/:id", async (req, res) => {
   try {

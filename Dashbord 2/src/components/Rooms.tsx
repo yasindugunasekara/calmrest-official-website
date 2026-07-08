@@ -51,7 +51,7 @@ interface Room {
   images: string[];
   rating?: number;
   size?: number;
-  bedType?: string;
+  bed?: string;
   amenities?: string[];
   features?: string[];
 }
@@ -359,7 +359,7 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
     rating: 5,
     size: 30,
     guests: 2,
-    bedType: "King Bed",
+    bed: "King Bed",
     images: [] as string[],
     description: "",
     amenities: [] as string[],
@@ -377,7 +377,7 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
         rating: room.rating || 5,
         size: room.size || 30,
         guests: room.guests || 2,
-        bedType: room.bedType || "King Bed",
+        bed: room.bed || "King Bed",
         images: room.images || [],
         description: room.description || "",
         amenities: room.amenities || [],
@@ -575,8 +575,8 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
               <div className="md:col-span-2">
                 <InputField
                   label="Bed Layout Description"
-                  name="bedType"
-                  value={formData.bedType}
+                  name="bed"
+                  value={formData.bed}
                   onChange={handleChange}
                   placeholder="e.g. 1 King Bed & 1 Sofa Bed"
                 />
