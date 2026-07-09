@@ -1,5 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 const router = express.Router();
@@ -9,72 +10,130 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
+    // Find user
     const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(400).json({ error: "Invalid email or password" });
+      return res.status(400).json({
+        error: "Invalid email or password",
+      });
     }
 
-    // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Prevent Google users from using password login
+    if (user.provider === "google") {
+      return res.status(400).json({
+        error: "Please login with Google",
+      });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+
     if (!isMatch) {
-      return res.status(400).json({ error: "Invalid email or password" });
+      return res.status(400).json({
+        error: "Invalid email or password",
+      });
     }
 
-    // Success
-    res.json({
-      message: "Login successful",
-      user: {
+    // Generate JWT
+    const token = jwt.sign(
+      {
         id: user._id,
-        name: user.name,
         email: user.email,
         role: user.role,
       },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_EXPIRE || "7d",
+      }
+    );
+
+    // Success
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        provider: user.provider,
+      },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({
+      error: err.message,
+    });
   }
 });
 
-// 🟣 Google Login Route
+// 🟣 Google Login
 router.post("/google", async (req, res) => {
   try {
-    const { name, email, profilePic, provider } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      provider,
+    } = req.body;
 
     if (!email) {
-      return res.status(400).json({ error: "Email is required" });
+      return res.status(400).json({
+        error: "Email is required",
+      });
     }
 
-    // Check if user already exists
     let user = await User.findOne({ email });
 
-    // If not, create a new user (without password)
+    // Create user if not exists
     if (!user) {
       user = new User({
-        name,
+        firstName: firstName || "",
+        lastName: lastName || "",
         email,
-        profilePic,
         provider: provider || "google",
-        password: "", // Leave empty for Google accounts
-        role: "user", // Default role, change if needed
+        role: "user",
       });
+
       await user.save();
     }
 
-    // Send user info to frontend
-    res.status(200).json({
-      message: "Google login successful",
-      user: {
+    // Generate JWT
+    const token = jwt.sign(
+      {
         id: user._id,
-        name: user.name,
         email: user.email,
         role: user.role,
-        profilePic: user.profilePic,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_EXPIRE || "7d",
+      }
+    );
+
+    res.status(200).json({
+      message: "Google login successful",
+      token,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        provider: user.provider,
       },
     });
   } catch (err) {
     console.error("Google login error:", err);
-    res.status(500).json({ error: "Server error during Google login" });
+
+    res.status(500).json({
+      error: "Server error during Google login",
+    });
   }
 });
 

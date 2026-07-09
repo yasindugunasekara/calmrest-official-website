@@ -2,8 +2,11 @@ const express = require("express");
 const Room = require("../models/Room");
 const router = express.Router();
 
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
 // CREATE Room
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const room = new Room(req.body);
     await room.save();
@@ -24,7 +27,7 @@ router.get("/", async (req, res) => {
 });
 
 // UPDATE Room
-router.put("/:id", async (req, res) => {
+router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const updatedRoom = await Room.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -36,7 +39,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE Room
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     await Room.findByIdAndDelete(req.params.id);
     res.json({ message: "Room deleted successfully ✅" });
@@ -47,7 +50,7 @@ router.delete("/:id", async (req, res) => {
 
 
 // Get single room by ID
-router.get("/:id", async (req, res) => {
+router.get("/:id",async (req, res) => {
   try {
     const room = await Room.findById(req.params.id);
     if (!room) return res.status(404).json({ message: "Room not found" });

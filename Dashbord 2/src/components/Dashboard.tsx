@@ -255,14 +255,9 @@ export default function Dashboard() {
         <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/10 border border-gold-500/20 text-gold-300 text-xs font-semibold uppercase tracking-wider mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-            Calm Rest Luxury Operations
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Welcome back, Administrator</h1>
-          <p className="text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
-            Monitor real-time reservations, check occupancy rates, and maintain a seamless guest experience. Here is your overview for today.
-          </p>
+          
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Calm rest Admin pannel</h1>
+          
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => window.location.href = "/bookings"}

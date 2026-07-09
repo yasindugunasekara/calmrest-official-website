@@ -3,6 +3,9 @@ const Booking = require("../models/Booking"); // Your Booking model
 const { sendBookingConfirmation } = require("../config/mailer");
 const router = express.Router();
 
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
 // Create new booking
 router.post("/", async (req, res) => {
   try {
@@ -28,7 +31,7 @@ router.post("/", async (req, res) => {
 
 
 //delete booking
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const deletedBooking = await Booking.findByIdAndDelete(req.params.id);
     if (!deletedBooking) {
@@ -40,7 +43,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const bookings = await Booking.find().lean(); // lean() gives plain JS objects
     const uniqueBookings = Array.from(new Map(bookings.map(b => [b._id.toString(), b])).values());
@@ -55,7 +58,7 @@ router.put("/:id", async (req, res) => {
   try {
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      req.body, 
       { new: true }
     );
     if (!updatedBooking) {

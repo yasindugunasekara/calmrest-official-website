@@ -3,6 +3,9 @@ const Message = require("../models/Message");
 
 const router = express.Router();
 
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
 // POST - Create new message
 router.post("/", async (req, res) => {
   try {
@@ -22,7 +25,7 @@ router.post("/", async (req, res) => {
 });
 
 // GET - Fetch all messages
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const messages = await Message.find().sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: messages });
@@ -31,7 +34,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const deletedMessage = await Message.findByIdAndDelete(req.params.id);
     if (!deletedMessage) {

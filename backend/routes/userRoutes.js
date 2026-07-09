@@ -3,7 +3,8 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 
 const router = express.Router();
-
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
 // Register User
 router.post("/", async (req, res) => {
   try {
@@ -35,7 +36,7 @@ router.post("/", async (req, res) => {
 });
 
 //delete user
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: "User deleted successfully ✅" });
@@ -45,7 +46,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Get All Users (Admin use)
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const users = await User.find().select("-password"); // hide password
     res.json(users);

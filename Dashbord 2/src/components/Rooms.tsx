@@ -156,7 +156,7 @@ export default function Rooms() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       
       {/* Title Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

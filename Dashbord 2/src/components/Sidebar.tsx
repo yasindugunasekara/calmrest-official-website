@@ -20,6 +20,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  };
+
   return (
     <aside
       className={`fixed inset-y-0 left-0 z-50 w-64 bg-luxury-blue-950 border-r border-luxury-blue-900 text-slate-200 transition-transform duration-300 lg:static lg:translate-x-0 ${
@@ -107,10 +112,17 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
             </div>
             <button
               onClick={() => navigate('/settings')}
-              className="p-2 text-slate-400 hover:text-red-400 hover:bg-luxury-blue-900 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-gold hover:bg-luxury-blue-900 rounded-lg transition-colors"
               title="Settings"
             >
               <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-slate-400 hover:text-red-400 hover:bg-luxury-blue-900 rounded-lg transition-colors"
+              title="Log Out"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>

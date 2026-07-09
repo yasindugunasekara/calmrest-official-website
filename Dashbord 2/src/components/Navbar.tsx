@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Bell, User, Calendar, CheckCircle, MessageSquare, AlertCircle } from 'lucide-react';
+import { Menu, Search, Bell, User, Calendar, CheckCircle, MessageSquare, AlertCircle, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   setSidebarOpen: (open: boolean) => void;
@@ -17,6 +18,7 @@ interface Notification {
 }
 
 export default function Navbar({ setSidebarOpen }: NavbarProps) {
+  const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -133,6 +135,11 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
     const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
     return () => clearInterval(interval);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  };
 
   // Tick current time
   useEffect(() => {
@@ -280,6 +287,14 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
               <span className="text-[10px] font-medium text-emerald-600 block leading-tight">Super Admin</span>
             </div>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="p-2.5 bg-gray-50 border border-gray-100 hover:border-red-200 text-gray-500 hover:text-red-600 hover:bg-red-50/50 rounded-xl transition-all duration-300 shadow-sm"
+            title="Log Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
 
         </div>
       </div>
