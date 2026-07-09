@@ -26,9 +26,7 @@ exports.login = async (req, res) => {
       {
         id: user._id,
       },
-
-      process.env.JWT_SECRET,
-
+      process.env.JWT_SECRET || "default_jwt_secret_fallback_key_12345",
       {
         expiresIn: process.env.JWT_EXPIRE,
       },
