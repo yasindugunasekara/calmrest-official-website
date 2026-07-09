@@ -222,25 +222,40 @@ const Home = () => {
                 >
                   {/* Room Card Image */}
                   <div className="relative overflow-hidden">
-                    <img
-                      src={room.images?.[0] || "https://via.placeholder.com/400x300?text=No+Image"}
-                      alt={room.name}
-                      className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
+                    {((room.images && room.images.length > 0 && !room.images[0].includes("placehold") && !room.images[0].includes("placeholder")) || (room.image && !room.image.includes("placehold") && !room.image.includes("placeholder"))) ? (
+                      <img
+                        src={room.images && room.images.length > 0 ? room.images[0] : room.image}
+                        alt={room.name}
+                        className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                    ) : (
+                      <div className="w-full h-64 bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
+                        <span className="text-3xl font-serif font-bold text-[#45392e] tracking-wide select-none text-center px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]">
+                          Calm Rest Suite
+                        </span>
+                      </div>
+                    )}
                     <div className="absolute top-4 right-4 bg-gold text-white px-3.5 py-1.5 rounded font-semibold shadow-md text-sm">
                       ${room.price}/night
                     </div>
-                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1 shadow-sm">
-                      <Star fill="currentColor" className="text-gold w-4 h-4" />
-                      <span className="font-bold text-navy text-sm">{room.rating}</span>
+                    <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide shadow-sm">
+                      {room.category || "Standard"}
                     </div>
                   </div>
 
                   <div className="p-6 flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="text-xl font-bold mb-2 text-navy font-serif group-hover:text-gold transition-colors duration-300">
-                        {room.name}
-                      </h3>
+                      <div className="flex justify-between items-center mb-2 gap-2">
+                        <h3 className="text-xl font-bold text-navy font-serif group-hover:text-gold transition-colors duration-300 line-clamp-1">
+                          {room.name}
+                        </h3>
+                        <div className="flex items-center space-x-1 flex-shrink-0 text-gray-700 bg-gray-50 px-2.5 py-1 rounded border border-gray-100 shadow-sm">
+                          <Star fill="#d4af37" className="text-gold w-3.5 h-3.5" />
+                          <span className="font-bold text-sm text-navy">{room.rating || 5.0}</span>
+                        </div>
+                      </div>
                       <p className="text-gray-500 mb-4 text-xs sm:text-sm line-clamp-2 leading-relaxed">
                         {room.description}
                       </p>

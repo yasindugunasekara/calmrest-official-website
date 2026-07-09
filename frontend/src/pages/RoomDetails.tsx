@@ -203,12 +203,32 @@ const RoomDetails: React.FC = () => {
             {/* Gallery Section */}
             <div>
               <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden shadow-md group/gallery bg-gray-900">
-                <img
-                  src={images[activeIndex]}
-                  className="w-full h-full object-cover transition-all duration-700 select-none cursor-pointer"
-                  alt={`${room.name} view`}
-                  onClick={() => setIsFullscreen(true)}
-                />
+                {images[activeIndex] && !images[activeIndex].includes("placehold") && !images[activeIndex].includes("placeholder") ? (
+                  <>
+                    <img
+                      src={images[activeIndex]}
+                      className="w-full h-full object-cover transition-all duration-700 select-none cursor-pointer"
+                      alt={`${room.name} view`}
+                      onClick={() => setIsFullscreen(true)}
+                    />
+                    {/* Fullscreen icon button */}
+                    <button
+                      onClick={() => setIsFullscreen(true)}
+                      className="absolute bottom-4 right-4 z-10 p-2.5 rounded-lg bg-navy/60 backdrop-blur-sm hover:bg-navy/85 text-white shadow-sm flex items-center justify-center transition-all"
+                      title="Fullscreen preview"
+                    >
+                      <Maximize2 size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
+                    <span className="text-3xl sm:text-4xl font-serif font-bold text-[#45392e] tracking-wide select-none text-center px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]">
+                      Calm Rest Suite
+                    </span>
+                  </div>
+                )}
                 
                 {/* Arrow Controls */}
                 {images.length > 1 && (
@@ -227,15 +247,6 @@ const RoomDetails: React.FC = () => {
                     </button>
                   </>
                 )}
-
-                {/* Fullscreen icon button */}
-                <button
-                  onClick={() => setIsFullscreen(true)}
-                  className="absolute bottom-4 right-4 z-10 p-2.5 rounded-lg bg-navy/60 backdrop-blur-sm hover:bg-navy/85 text-white shadow-sm flex items-center justify-center transition-all"
-                  title="Fullscreen preview"
-                >
-                  <Maximize2 size={16} />
-                </button>
               </div>
 
               {/* Thumbnails list */}

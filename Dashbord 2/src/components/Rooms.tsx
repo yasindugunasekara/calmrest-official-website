@@ -242,18 +242,23 @@ const RoomCard = ({
       <div>
         {/* Photo Container */}
         <div className="relative h-48 overflow-hidden bg-gray-50 border-b border-gray-50">
-          <img
-            src={
-              room.images && room.images.length > 0
-                ? room.images[0]
-                : "https://placehold.co/600x400/F5EBDF/3A3022?text=Calm+Rest+Suite"
-            }
-            alt={room.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-          <span className="absolute top-3 left-3 bg-luxury-blue-950/80 backdrop-blur-md text-gold-300 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-gold-500/20">
-            {room.category}
+          {room.images && room.images.length > 0 && !room.images[0].includes("placehold") && !room.images[0].includes("placeholder") ? (
+            <img
+              src={room.images[0]}
+              alt={room.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
+              <span className="text-xl font-serif font-bold text-[#45392e] tracking-wide select-none text-center px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]">
+                Calm Rest Suite
+              </span>
+            </div>
+          )}
+          <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/10 shadow-sm">
+            {room.category || "Standard"}
           </span>
         </div>
 
