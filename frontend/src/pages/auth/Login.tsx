@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { signInWithGoogle } from "../../firebase"; // ✅ import Firebase helper
 import { trackEvent } from "../../utils/analytics";
 import axios from "axios";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +37,7 @@ const Login = () => {
         localStorage.setItem("token", data.token);
 
         setTimeout(() => {
-          window.location.href = "/book";
+          navigate("/book");
         }, 1200);
       } else {
         setSuccess(false);
@@ -73,7 +74,7 @@ const Login = () => {
     const data = await res.json();
     console.log("Google login success:", data);
     localStorage.setItem("user", JSON.stringify(data));
-    window.location.href = "/book";
+    navigate("/book");
   } catch (err: any) {
     console.error("Google login failed:", err);
     alert("Google login failed: " + err.message);
