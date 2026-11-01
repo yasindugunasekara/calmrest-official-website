@@ -115,3 +115,20 @@ test('SMTP delivery failures remain retryable without losing the guest question'
  nodemailer.createTransport=()=>({sendMail:async()=>({messageId:'retry'})});
  await call('post','/api/settings/retry-emails',adminToken).expect(200);assert.equal(await require('../models/EmailJob').countDocuments({status:'failed'}),0);
 });
+
+test('password recovery sends a single-use link, hides account existence, and revokes old sessions',async()=>{
+ const before=await require('../models/EmailJob').countDocuments();
+ const unknown=await call('post','/api/auth/forgot-password').send({email:'missing@example.test'}).expect(200);
+ assert.equal(await require('../models/EmailJob').countDocuments(),before);
+ const known=await call('post','/api/auth/forgot-password').send({email:'guest@example.test'}).expect(200);
+ assert.equal(unknown.body.message,known.body.message);
+ const job=await require('../models/EmailJob').findOne({subject:'Reset your Calm Rest password'}).sort({createdAt:-1});
+ const link=job.text.match(/https:\/\/[^\s]+/)[0];const token=new URL(link).searchParams.get('token');assert.equal(token.length,64);
+ const user=await require('../models/User').findOne({email:'guest@example.test'}).select('+resetPasswordHash');assert.notEqual(user.resetPasswordHash,token);
+ await call('post','/api/auth/reset-password').send({token,password:'short'}).expect(400);
+ await call('post','/api/auth/reset-password').send({token,password:'new correct horse battery'}).expect(200);
+ await call('post','/api/auth/reset-password').send({token,password:'another correct horse battery'}).expect(400);
+ await call('post','/api/auth/login').send({email:'guest@example.test',password:guestPassword}).expect(401);
+ await call('post','/api/auth/login').send({email:'guest@example.test',password:'new correct horse battery'}).expect(200);
+ await call('get','/api/auth/me',userToken).expect(401);
+});

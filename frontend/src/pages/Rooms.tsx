@@ -276,7 +276,7 @@ const Rooms = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       trackEvent('cta_click', { button_name: 'Room Card Book Now', room_name: room.name });
-                      navigate("/login");
+                      navigate(`/book?room=${room._id}&checkIn=${checkIn}&checkOut=${checkOut}`);
                     }}
                   >
                     Book Now

@@ -12,7 +12,7 @@ This repository contains three independently deployed applications:
 
 Use Node 24, matching the production runtime and CI. Run `npm ci` in each application directory. Copy each `.env.example` to `.env`, then supply private credentials locally. Never commit environment files.
 
-Start `npm run dev` in the backend, frontend, and admin directories. The two Vite apps use `VITE_API_BASE_URL=http://localhost:5000/api`. Include both local Vite origins in backend `ALLOWED_ORIGINS`.
+Start `npm run dev` in the backend, frontend, and admin directories. The two Vite apps use `VITE_API_BASE_URL=http://localhost:5000/api`. Include both local Vite origins in backend `ALLOWED_ORIGINS`. If local MongoDB SRV lookups fail, set `DNS_SERVERS` to working DNS resolvers; production uses its own system DNS unless explicitly configured.
 
 MongoDB must support transactions: use Atlas or a replica set. Reservation creation and inventory changes serialize on the room record inside a transaction, preventing concurrent overselling. Each room document represents one category; `inventory` is its physical room count (defaults to one). Review inventory for existing room categories before accepting reservations.
 
@@ -25,7 +25,7 @@ MongoDB must support transactions: use Atlas or a replica set. Reservation creat
 
 ## Authentication and operations
 
-Public registration always creates guests. Only an existing authenticated administrator may call `POST /api/users/admin`. Google sign-in requires a signed Firebase ID token, verified against Google's keys, project audience, issuer, expiration and provider; supplied email addresses alone cannot sign in. Existing local accounts are never implicitly linked to Google identities. JWT authorization looks up the current account and role; logout revokes previously issued tokens for that account. Configure a random JWT secret of at least 32 characters.
+Public registration always creates guests. Only an existing authenticated administrator may call `POST /api/users/admin`. Google sign-in requires a signed Firebase ID token, verified against Google's keys, project audience, issuer, expiration and provider; supplied email addresses alone cannot sign in. Existing local accounts are never implicitly linked to Google identities. JWT authorization looks up the current account and role; logout revokes previously issued tokens for that account. Configure a random JWT secret of at least 32 characters. Password recovery uses 15-minute hashed single-use tokens; successful reset revokes existing sessions. Configure `FRONTEND_URL` if password reset links should target a different public site.
 
 Bookings support guest checkout with validated dates, guest limits, server-calculated prices, and request idempotency. New bookings start Pending unless auto-confirm is enabled. Admins can confirm, check in/out, cancel, and delete bookings. Closed bookings cannot be reopened. The application reserves rooms; it does not collect online payments. Dashboard value charts show reservation value, not settled payments, and omit unknown historical prices rather than inventing rates.
 

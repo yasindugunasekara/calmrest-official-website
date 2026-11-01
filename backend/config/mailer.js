@@ -35,4 +35,4 @@ Email: ${message.email}
 Phone: ${message.phone || ''}
 
 ${message.message}`,message.email); }
-module.exports={bookingEmails,messageEmail,deliverPending};
+module.exports={bookingEmails,messageEmail,deliverPending,queue};

@@ -20,6 +20,7 @@ const Navbar = () => {
     { name: t('location'), href: '/location' },
     { name: t('Reviews'), href: '/Testimonials' },
     { name: t('contact'), href: '/contact' },
+    { name: 'My account', href: '/profile' },
   ];
 
   return (
@@ -71,9 +72,9 @@ const Navbar = () => {
                 onClick={() => {
                   trackEvent("cta_click", {
                     button_name: "Navbar Book Now",
-                    target_url: "/login",
+                    target_url: "/book",
                   });
-                  navigate("/login");
+                  navigate("/book");
                 }}
               >
                 {t("bookNow")}
@@ -114,7 +115,7 @@ const Navbar = () => {
                 <button
                   className="w-full bg-gold text-white px-6 py-2 rounded hover:bg-opacity-90 transition-all duration-300 font-medium"
                    onClick={() => {
-              navigate('/login');
+              navigate('/book');
               }}
                 >
                   {t('bookNow')}

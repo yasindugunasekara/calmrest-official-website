@@ -1,3 +1,5 @@
+const Services=lazy(()=>import("./pages/Services"));
+const PasswordRecovery = lazy(()=>import("./pages/auth/PasswordRecovery"));
 import { lazy, Suspense } from "react";
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
@@ -33,7 +35,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   // Hide Navbar/Footer on specific routes (case-insensitive)
   const path = location.pathname.toLowerCase();
   const hideLayout =
-    path === "/login" ||
+    path === "/login" || path === "/forgot-password" || path === "/reset-password" ||
     path === "/register" ||
     path === "/404" ||
     path === "/book" ||
@@ -58,6 +60,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/about" element={<About />} />
+            <Route path="/services" element={<Services />} />
             <Route path="/location" element={<Location />} />
             <Route path="/testimonials" element={<Testimonials />} />
             <Route path="/write-review" element={<WriteReview />} />
@@ -67,6 +70,8 @@ function App() {
 
             {/* Auth Pages */}
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<PasswordRecovery />} />
+            <Route path="/reset-password" element={<PasswordRecovery />} />
             <Route path="/register" element={<Register />} />
 
             {/* Room Details Page (no header/footer) */}

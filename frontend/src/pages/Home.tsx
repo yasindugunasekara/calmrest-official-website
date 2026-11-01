@@ -127,8 +127,8 @@ const Home = () => {
             <button
               className="bg-gold text-white px-10 sm:px-14 py-3 sm:py-4 text-base sm:text-lg font-medium hover:bg-opacity-90 rounded transition-transform duration-300 hover:scale-105"
               onClick={() => {
-                trackEvent('cta_click', { button_name: 'Hero Book Now', target_url: '/login' });
-                navigate("/login");
+                trackEvent('cta_click', { button_name: 'Hero Book Now', target_url: '/book' });
+                navigate("/book");
               }}
             >
               {t("bookNow")}
@@ -305,7 +305,7 @@ const Home = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           trackEvent('cta_click', { button_name: 'Room Card Book Now', room_name: room.name });
-                          navigate("/login");
+                          navigate(`/book?room=${room._id}`);
                         }}
                       >
                         Book Now

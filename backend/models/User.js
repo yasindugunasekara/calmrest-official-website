@@ -6,6 +6,8 @@ const userSchema = new mongoose.Schema(
     lastName: { type: String, required: function() { return this.provider !== "google"; } },
     country: { type: String, required: function() { return this.provider !== "google"; } },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxLength: 254 },
+    resetPasswordHash: { type: String, select: false },
+    resetPasswordExpires: { type: Date, select: false },
     tokenVersion: { type: Number, default: 0 },
     googleUid: { type: String },
     password: { select: false, type: String, required: function() { return this.provider !== "google"; } }, // required only for normal signup

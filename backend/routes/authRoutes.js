@@ -31,6 +31,28 @@ router.post('/google',async(req,res)=>{
  if(!user) { const [firstName,...rest]=(identity.name || 'Guest').split(' '); user=await User.create({firstName,lastName:rest.join(' '),email,provider:'google',googleUid:identity.uid,role:'user'}); }
  res.json(session(user));
 });
+
+router.post('/forgot-password',async(req,res)=>{
+ const email=v.email(req.body.email);
+ const user=await User.findOne({email,provider:'local'});
+ if(user) {
+  const {randomBytes,createHash}=require('node:crypto');const token=randomBytes(32).toString('hex');
+  await User.updateOne({_id:user._id},{$set:{resetPasswordHash:createHash('sha256').update(token).digest('hex'),resetPasswordExpires:new Date(Date.now()+15*60000)}});
+  const {queue,deliverPending}=require('../config/mailer');
+  const link=`${process.env.FRONTEND_URL || 'https://www.calmrestmidigama.com'}/reset-password?token=${token}`;
+  await queue(`reset-${user._id}-${token.slice(0,12)}`,user.email,'Reset your Calm Rest password',`A password reset was requested for your Calm Rest account. This link expires in 15 minutes and can be used once.\n\n${link}\n\nIf you did not request this, ignore this email.`);
+  await deliverPending();
+ }
+ res.json({success:true,message:'If that email has a password account, a reset link will be emailed to you.'});
+});
+router.post('/reset-password',async(req,res)=>{
+ const token=v.text(req.body.token,'Reset token',64);if(!/^[a-f0-9]{64}$/.test(token)) v.fail('Invalid or expired reset link');
+ const password=await bcrypt.hash(v.password(req.body.password),12);
+ const resetPasswordHash=require('node:crypto').createHash('sha256').update(token).digest('hex');
+ const user=await User.findOneAndUpdate({resetPasswordHash,resetPasswordExpires:{$gt:new Date()},provider:'local'},{$set:{password},$unset:{resetPasswordHash:1,resetPasswordExpires:1},$inc:{tokenVersion:1}},{new:true});
+ if(!user) v.fail('Invalid or expired reset link');
+ res.json({success:true,message:'Password updated. Sign in with your new password.'});
+});
 router.get('/me',auth,(req,res)=>res.json({user:publicUser(req.account)}));
 router.post('/logout',auth,async(req,res)=>{ await User.updateOne({_id:req.user.id},{$inc:{tokenVersion:1}});res.json({success:true}); });
 module.exports=router;

@@ -1,5 +1,5 @@
 
-import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 import { useLanguage } from '../contexts/useLanguage';
 
 const Footer = () => {
@@ -34,15 +34,8 @@ const Footer = () => {
               Our meticulously designed spaces offer the perfect sanctuary for discerning travelers.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-gold transition-colors">
-                <Facebook size={24} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-gold transition-colors">
-                <Instagram size={24} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-gold transition-colors">
-                <Linkedin size={24} />
-              </a>
+              <a href="mailto:calmrestmidigama2017@gmail.com" aria-label="Email Calm Rest" className="text-gray-400 hover:text-gold"><Mail size={24}/></a>
+              <a href="tel:+94412251712" aria-label="Call Calm Rest" className="text-gray-400 hover:text-gold"><Phone size={24}/></a>
             </div>
           </div>
 
@@ -64,7 +57,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail size={20} className="text-gold" />
-                <p className="text-gray-300">info@calmrest.com</p>
+                <p className="text-gray-300">calmrestmidigama2017@gmail.com</p>
               </div>
             </div>
           </div>
@@ -97,11 +90,11 @@ const Footer = () => {
             © {new Date().getFullYear()} Calm Rest Hotel. All rights reserved.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="text-gray-400 hover:text-gold text-sm transition-colors">
-              Privacy Policy
+            <a href="/contact" className="text-gray-400 hover:text-gold text-sm transition-colors">
+              Privacy questions
             </a>
-            <a href="#" className="text-gray-400 hover:text-gold text-sm transition-colors">
-              Terms of Service
+            <a href="/contact" className="text-gray-400 hover:text-gold text-sm transition-colors">
+              Booking policies
             </a>
           </div>
         </div>
