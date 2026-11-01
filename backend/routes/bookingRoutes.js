@@ -13,9 +13,10 @@ const {
 } = require("../config/mailer");
 router.post(
   "/",
-  (req, res, next) =>
-    req.headers.authorization ? auth(req, res, next) : next(),
+  auth,
   async (req, res) => {
+    if(!req.account.emailVerified && !req.account.googleUid) return res.status(403).json({error:'Verify your email before booking.',code:'EMAIL_VERIFICATION_REQUIRED'});
+    if(v.email(req.body.email)!==req.user.email) v.fail('Use your verified account email for this booking',403);
     const firstName = v.text(req.body.firstName, "First name", 80),
       lastName = v.text(req.body.lastName, "Last name", 80),
       email = v.email(req.body.email),

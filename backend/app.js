@@ -18,7 +18,7 @@ app.use('/api',async(req,res,next)=>{
  if(!process.env.JWT_SECRET || process.env.JWT_SECRET.length<32 || process.env.JWT_SECRET==='default_jwt_secret_fallback_key_12345') return res.status(503).json({error:'Authentication is not securely configured'});
  await connectDB();next();
 });
-for(const [path,file] of Object.entries({rooms:'roomRoutes',bookings:'bookingRoutes',messages:'messageRoutes',users:'userRoutes',auth:'authRoutes',testimonials:'testimonials',settings:'settingsRoutes'})) app.use(`/api/${path}`,require(`./routes/${file}`));
+for(const [path,file] of Object.entries({integrations:'integrationRoutes',rooms:'roomRoutes',bookings:'bookingRoutes',messages:'messageRoutes',users:'userRoutes',auth:'authRoutes',testimonials:'testimonials',settings:'settingsRoutes'})) app.use(`/api/${path}`,require(`./routes/${file}`));
 app.get('/',(req,res)=>res.json({service:'Calm Rest API'}));
 app.use((req,res)=>res.status(404).json({error:'Endpoint not found'}));
 app.use((error,req,res,next)=>{

@@ -90,13 +90,13 @@ const Login = () => {
 
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh">
       {/* Left Side */}
-      <div className="hidden md:flex md:w-1/2 relative">
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b"
           alt="Login Visual"
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute bottom-8 left-8 text-white max-w-sm">
           <h2 className="text-3xl font-bold mb-2">Welcome to your coastal retreat</h2>
@@ -105,12 +105,12 @@ const Login = () => {
       </div>
 
       {/* Right Side */}
-      <div className="flex w-full md:w-1/2 justify-center items-center p-6 bg-white">
+      <div className="flex w-full md:w-1/2 justify-center items-start sm:items-center p-5 sm:p-8 py-10 bg-white">
         <div className="w-full max-w-md">
           <h2 className="text-2xl font-bold text-center mb-6">
-            Welcome Back to Calm Rest
+            Welcome to Calm Rest
           </h2>
-          <p className="text-center text-gray-500 mb-6">Sign in to your account</p>
+          <p className="text-center text-gray-500 mb-6">Sign in, verify your email, and book with confidence.</p>
 
 
           {/* Normal Login Form */}
@@ -186,7 +186,7 @@ const Login = () => {
             type="button"
             onClick={handleGoogleLogin}
             disabled={googleLoading || loading}
-            className="w-full border flex items-center justify-center gap-3 py-2 rounded-lg mb-5 hover:bg-gray-100"
+            className="w-full border flex items-center justify-center gap-3 py-3 min-h-12 rounded-lg mb-5 hover:bg-gray-100"
           >
             {googleLoading ? (
               <>

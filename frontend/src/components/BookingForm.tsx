@@ -310,24 +310,7 @@ const BookingForm: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Columns: Inputs Grid (Span 2) */}
         <div className="lg:col-span-2 space-y-4">
-          {!localStorage.getItem("token") && (
-            <p className="rounded-xl bg-stone-50 border p-4 text-sm">
-              Already stayed with us?{" "}
-              <Link
-                to="/login"
-                onClick={() =>
-                  sessionStorage.setItem(
-                    "bookingReturn",
-                    location.pathname + location.search,
-                  )
-                }
-                className="underline font-semibold"
-              >
-                Sign in to fill your details
-              </Link>
-              , or continue as a guest.
-            </p>
-          )}
+          
           <label className="block text-sm text-slate-600">
             Phone (optional)
             <input
@@ -391,11 +374,11 @@ const BookingForm: React.FC = () => {
               </span>
               <div className="flex-1">
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
-                  Email Address
+                  Verified email
                 </label>
                 <input
                   type="email"
-                  autoComplete="email"
+                  readOnly autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="john.doe@example.com"

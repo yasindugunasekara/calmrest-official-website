@@ -11,7 +11,7 @@ const delivery=[];
 const call=(method,path,token)=>{let req=request(app)[method](path).set('X-Forwarded-For',`192.0.2.${ip++}`);if(token)req=req.set('Authorization',`Bearer ${token}`);return req;};
 const date=(offset)=>new Date(Date.now()+offset*86400000).toISOString().slice(0,10);
 const stay=(extra={})=>({firstName:'Test',lastName:'Guest',email:'guest@example.test',roomId,roomType:'Garden Room',checkIn:date(5),checkOut:date(7),guests:2,totalPrice:1,...extra});
-const book=(body)=>call('post','/api/bookings').set('Idempotency-Key',randomUUID()).send(body);
+const book=(body)=>call('post','/api/bookings',userToken).set('Idempotency-Key',randomUUID()).send(body);
 before(async()=>{
  process.env.FIREBASE_PROJECT_ID='test-project';process.env.JWT_SECRET='test-secret-only-'.repeat(4);process.env.SMTP_USER='sender@example.test';process.env.SMTP_PASS='fake-only';process.env.ADMIN_NOTIFICATION_EMAIL='calmrestmidigama2017@gmail.com';process.env.ALLOWED_ORIGINS='https://hotel.example.test';
  nodemailer.createTransport=()=>({sendMail:async message=>{delivery.push(message);return {messageId:'test-only'};}});
@@ -54,13 +54,14 @@ test('admin creates rooms with validated inventory and CDN images',async()=>{
  const response=await call('post','/api/rooms',adminToken).send(room).expect(201);roomId=response.body._id;assert.equal(response.body.inventory,1);
 });
 test('booking price is computed on the server and owner/guest emails are queued and delivered',async()=>{
+ await call('post','/api/bookings').send(stay()).expect(401);await book(stay()).expect(403);await require('../models/User').updateOne({email:'guest@example.test'},{$set:{emailVerified:true}});await book(stay({email:'other@example.test'})).expect(403);
  const response=await book(stay()).expect(201);bookingId=response.body.bookingId;assert.equal(response.body.booking.totalPrice,250);assert.equal(response.body.booking.status,'Pending');
  const owner=delivery.find(m=>m.to==='calmrestmidigama2017@gmail.com');assert.ok(owner);assert.match(owner.text,/Garden Room/);assert.ok(delivery.find(m=>m.to==='guest@example.test'));
 });
 test('booking idempotency returns one reservation and prevents duplicate email jobs',async()=>{
  const key=randomUUID(),body=stay({checkIn:date(10),checkOut:date(11)});
- const first=await call('post','/api/bookings').set('Idempotency-Key',key).send(body).expect(201);
- const second=await call('post','/api/bookings').set('Idempotency-Key',key).send(body).expect(201);assert.equal(first.body.bookingId,second.body.bookingId);
+ const first=await call('post','/api/bookings',userToken).set('Idempotency-Key',key).send(body).expect(201);
+ const second=await call('post','/api/bookings',userToken).set('Idempotency-Key',key).send(body).expect(201);assert.equal(first.body.bookingId,second.body.bookingId);
  assert.equal(await require('../models/Booking').countDocuments({idempotencyKey:key}),1);
  assert.equal(await require('../models/EmailJob').countDocuments({key:`booking-owner-${first.body.bookingId}`}),1);
 });
@@ -146,7 +147,7 @@ test('Google linking requires both verified Google identity and the existing pas
 });
 test('profile edits cannot change email or role and authenticated bookings are privately owned',async()=>{
  const User=require('../models/User');const bcrypt=require('bcryptjs');const session=require('../lib/session').session;
- const a=await User.create({firstName:'One',lastName:'Guest',country:'LK',email:'one@example.test',password:await bcrypt.hash('private history password',12)});
+ const a=await User.create({firstName:'One',lastName:'Guest',country:'LK',email:'one@example.test',emailVerified:true,password:await bcrypt.hash('private history password',12)});
  const b=await User.create({firstName:'Two',lastName:'Guest',country:'LK',email:'two@example.test',password:await bcrypt.hash('private history password',12)});
  const ta=session(a).token,tb=session(b).token;
  const edited=await call('patch','/api/auth/me',ta).send({firstName:'Updated',lastName:'Guest',country:'Sri Lanka',phone:'+94 700000000',role:'admin',email:'other@example.test'}).expect(200);assert.equal(edited.body.user.role,'user');assert.equal(edited.body.user.email,'one@example.test');assert.equal(edited.body.user.phone,'+94 700000000');
@@ -179,4 +180,11 @@ test('email verification retrieves legacy guest bookings only after single-use p
  const expiredCode=delivery.findLast(m=>m.to===user.email && m.subject.includes('Verify')).text.match(/code is ([0-9]{8})/)[1];
  await User.updateOne({_id:user._id},{$set:{emailCodeExpires:new Date(0)}});
  await call('post','/api/auth/verify-email/confirm',token).send({code:expiredCode}).expect(400);
+});
+
+test('Claude connector rejects missing credentials, reports read-only data and supports revocation',async()=>{
+ const {createHash}=require('node:crypto');const token='ab'.repeat(32);const Credential=require('../models/IntegrationCredential');await Credential.create({_id:'claude-desktop',tokenHash:createHash('sha256').update(token).digest('hex')});
+ for(const name of ['rooms','bookings','availability','dashboard','revenue','messages']){await call('get','/api/integrations/'+name).expect(401);const response=await call('get','/api/integrations/'+name,token).expect(200);assert.ok(response.body);}
+ await call('post','/api/integrations/rooms',token).send({}).expect(404);
+ await Credential.updateOne({_id:'claude-desktop'},{$set:{enabled:false}});await call('get','/api/integrations/dashboard',token).expect(401);
 });

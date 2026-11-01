@@ -109,7 +109,7 @@ const Home = () => {
       {/* 🌅 Hero Section */}
       <section ref={heroRef} className="relative min-h-[90vh] flex flex-col items-center justify-center text-center text-white px-6 md:px-10">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-fixed"
+          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
           style={{
             backgroundImage:
               "url(https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1761921975/Rooms/pic1_twzesv.jpg)",
@@ -221,7 +221,7 @@ const Home = () => {
                 <div
                   key={room._id}
                   onClick={() => handleCardClick(room._id)}
-                  className="snap-start scroll-mt-24 bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-2xl hover:border-gold/30 border border-transparent cursor-pointer transition-all duration-500 flex flex-col justify-between"
+                  className="scroll-mt-24 bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-2xl hover:border-gold/30 border border-transparent cursor-pointer transition-all duration-500 flex flex-col justify-between"
                 >
                   {/* Room Card Image */}
                   <div className="relative overflow-hidden">

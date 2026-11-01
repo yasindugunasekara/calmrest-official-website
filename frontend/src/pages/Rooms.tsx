@@ -172,7 +172,7 @@ const Rooms = () => {
             <div
               key={room._id}
               onClick={() => handleCardClick(room._id)}
-              className="snap-start scroll-mt-24 bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-2xl hover:border-gold/30 border border-transparent cursor-pointer transition-all duration-500 flex flex-col justify-between"
+              className="scroll-mt-24 bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-2xl hover:border-gold/30 border border-transparent cursor-pointer transition-all duration-500 flex flex-col justify-between"
             >
               {room.available !== undefined && <p className="px-4 pt-4 font-semibold text-sm">{room.available ? `${room.available} available for your dates` : "Sold out for your dates"}</p>}
               {/* Room Card Image */}

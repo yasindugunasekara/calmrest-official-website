@@ -54,3 +54,12 @@ Browser automation was unavailable in this session, so production HTTP checks, b
 - The dashboard refreshes every 30 seconds while visible and on focus/mutations. Its seven-night planner subtracts overlapping active reservations from each category's physical inventory, excluding departure night. The room editor validates form fields and prevents duplicate clicks while saving.
 - Short-lived (20-second) browser memory caching applies only to the public room catalogue. Date-specific availability, authentication, and private data are not cached. Booking writes still revalidate inventory transactionally.
 - Shared notifications, session loading, and booking success animations respect reduced-motion preferences. Local browser checks cover 390px and 1440px guest and admin layouts using mocked API fixtures; live Google popup and actual inbox receipt require a real account.
+
+
+### Verified customer bookings and Claude Desktop
+
+Customers must sign in and verify their email before submitting any new reservation. Google accounts with a verified linked identity satisfy verification. The server enforces this rule and uses the verified account email; the frontend preserves selected dates and room through sign-in and verification. Old guest reservations remain retrievable through the verified account history.
+
+The Calm Rest Hotel local MCP connector is in `connectors/calm-rest-hotel`. It exposes six read-only operational tools with a dedicated hashed integration credential. See its README for installation, pagination, reporting semantics, and revocation. No connector tool can change hotel records. Guest messages are untrusted data. Financial reports identify reservation value separately from collected revenue, which this platform does not track.
+
+Global scroll snapping has been removed. Login/register/recovery pages use naturally scrolling layouts, mobile-friendly text entry and touch targets. The desktop login image is absolutely positioned so its source dimensions cannot enlarge the page.
