@@ -168,8 +168,11 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const markAllRead = async () => {
+    try {
+      await Promise.all(notifications.filter(n=>n.type==='message' && !n.isRead).map(n=>apiFetch(`${API_BASE_URL}/messages/${n.id.slice(2)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isRead:true})}).then(response=>{if(!response.ok)throw new Error('Unable to update notifications');})));
+      setNotifications(prev=>prev.map(n=>({...n,isRead:true})));
+    } catch {alert('Unable to update notifications. Please try again.');}
   };
 
   const getFormattedDate = () => {
@@ -203,7 +206,9 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search bookings, guests, rooms..."
+              placeholder="Search bookings by guest or reference…"
+              aria-label="Search bookings"
+              onKeyDown={event=>{if(event.key==='Enter') navigate(`/bookings?search=${encodeURIComponent(event.currentTarget.value)}`);}}
               className="w-full pl-9 pr-4 py-2 bg-gray-50/70 border border-gray-200/80 rounded-xl focus:bg-white text-sm focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all placeholder:text-gray-400"
             />
           </div>
@@ -253,6 +258,7 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
                       notifications.map((notif) => (
                         <div
                           key={notif.id}
+                          onClick={()=>{navigate(notif.type==='booking'?'/bookings':'/messages');setNotificationsOpen(false);}}
                           className={`flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors ${
                             !notif.isRead ? 'bg-gold-50/20' : ''
                           }`}
@@ -292,7 +298,7 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
             </div>
             <div className="hidden sm:block text-left">
               <span className="text-xs font-semibold text-gray-800 block leading-tight">Admin User</span>
-              <span className="text-[10px] font-medium text-emerald-600 block leading-tight">Super Admin</span>
+              <span className="text-[10px] font-medium text-emerald-600 block leading-tight">Administrator</span>
             </div>
           </div>
 

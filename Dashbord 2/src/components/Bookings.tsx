@@ -1,3 +1,4 @@
+import {useSearchParams} from "react-router-dom";
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
 import { useEffect, useState } from "react";
 import axios from "../../services/api";
@@ -22,7 +23,9 @@ export default function Bookings() {
   const [loading, setLoading] = useState(true);
 
   // Search & Filter state
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams,setSearchParams]=useSearchParams();
+  const searchTerm=searchParams.get("search") || "";
+  const setSearchTerm=(value:string)=>setSearchParams(value?{search:value}:{},{replace:true});
   const [roomTypeFilter, setRoomTypeFilter] = useState("All");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);

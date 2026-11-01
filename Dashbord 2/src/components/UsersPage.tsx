@@ -65,7 +65,7 @@ export default function UsersPage() {
       {/* Title Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight">Administrators Directory</h1>
+          <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight">Users & Administrators</h1>
           <p className="text-gray-400 text-xs mt-0.5">Manage administrative credentials, system roles, and country locations.</p>
         </div>
         <button
@@ -148,7 +148,8 @@ export default function UsersPage() {
                       <button
                         className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-transparent hover:border-rose-100 rounded-lg transition-all"
                         onClick={() => confirmDelete(user)}
-                        title="Remove Administrator"
+                        disabled={user.role === "admin"}
+                        title={user.role === "admin" ? "Administrator removal is restricted to the database owner" : "Delete guest account"}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -193,7 +194,7 @@ export default function UsersPage() {
                   className="px-4 py-2 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 rounded-xl transition-colors shadow-lg shadow-rose-500/10"
                   onClick={handleDelete}
                 >
-                  Revoke Admin
+                  Delete account
                 </button>
               </div>
             </motion.div>
