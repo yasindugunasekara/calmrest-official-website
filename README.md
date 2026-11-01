@@ -10,7 +10,7 @@ This repository contains three independently deployed applications:
 
 ## Development
 
-Use Node 24 (minimum 22.12). Run `npm ci` in each application directory. Copy each `.env.example` to `.env`, then supply private credentials locally. Never commit environment files.
+Use Node 24, matching the production runtime and CI. Run `npm ci` in each application directory. Copy each `.env.example` to `.env`, then supply private credentials locally. Never commit environment files.
 
 Start `npm run dev` in the backend, frontend, and admin directories. The two Vite apps use `VITE_API_BASE_URL=http://localhost:5000/api`. Include both local Vite origins in backend `ALLOWED_ORIGINS`.
 
