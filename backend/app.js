@@ -11,6 +11,7 @@ app.use('/api',(req,res,next)=>{res.set('Cache-Control','no-store');next();});
 const limit=(max,windowMs)=>rateLimit({windowMs,max,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Too many requests. Try again later.'}});
 app.use('/api',limit(300,60000));
 const loginLimit=limit(15,15*60000);app.use('/api/auth/login',loginLimit);app.use('/api/auth/google',loginLimit);app.use('/api/auth/forgot-password',loginLimit);app.use('/api/auth/reset-password',loginLimit);
+app.use('/api/auth/verify-email',loginLimit);
 const submitLimit=limit(10,15*60000);app.use(['/api/bookings','/api/messages','/api/users','/api/testimonials'],(req,res,next)=>req.method==='POST'?submitLimit(req,res,next):next());
 app.get('/api/health',(req,res)=>res.json({status:'ok'}));
 app.use('/api',async(req,res,next)=>{

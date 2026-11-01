@@ -132,3 +132,51 @@ test('password recovery sends a single-use link, hides account existence, and re
  await call('post','/api/auth/login').send({email:'guest@example.test',password:'new correct horse battery'}).expect(200);
  await call('get','/api/auth/me',userToken).expect(401);
 });
+
+test('Google linking requires both verified Google identity and the existing password',async()=>{
+ const {generateKeyPair,SignJWT}=await import('jose');const {privateKey,publicKey}=await generateKeyPair('RS256');
+ require('../routes/authRoutes').googleKeys=async()=>publicKey;
+ const token=await new SignJWT({email:'guest@example.test',email_verified:true,name:'Jane Guest',auth_time:Math.floor(Date.now()/1000),firebase:{sign_in_provider:'google.com'}}).setProtectedHeader({alg:'RS256'}).setSubject('google-test-guest').setIssuer('https://securetoken.google.com/test-project').setAudience('test-project').setExpirationTime('5m').sign(privateKey);
+ const denied=await call('post','/api/auth/google').send({idToken:token}).expect(409);assert.equal(denied.body.code,'LINK_PASSWORD_REQUIRED');
+ await call('post','/api/auth/google').send({idToken:token,password:'incorrect-password'}).expect(401);
+ const User=require('../models/User');const bcrypt=require('bcryptjs');await User.updateOne({email:'guest@example.test'},{$set:{password:await bcrypt.hash('linking test password',12)}});
+ const linked=await call('post','/api/auth/google').send({idToken:token,password:'linking test password'}).expect(200);assert.equal(linked.body.user.role,'user');
+ await call('post','/api/auth/google').send({idToken:token}).expect(200);
+ await call('post','/api/auth/login').send({email:'guest@example.test',password:'linking test password'}).expect(200);
+});
+test('profile edits cannot change email or role and authenticated bookings are privately owned',async()=>{
+ const User=require('../models/User');const bcrypt=require('bcryptjs');const session=require('../lib/session').session;
+ const a=await User.create({firstName:'One',lastName:'Guest',country:'LK',email:'one@example.test',password:await bcrypt.hash('private history password',12)});
+ const b=await User.create({firstName:'Two',lastName:'Guest',country:'LK',email:'two@example.test',password:await bcrypt.hash('private history password',12)});
+ const ta=session(a).token,tb=session(b).token;
+ const edited=await call('patch','/api/auth/me',ta).send({firstName:'Updated',lastName:'Guest',country:'Sri Lanka',phone:'+94 700000000',role:'admin',email:'other@example.test'}).expect(200);assert.equal(edited.body.user.role,'user');assert.equal(edited.body.user.email,'one@example.test');assert.equal(edited.body.user.phone,'+94 700000000');
+ await call('patch','/api/auth/me',ta).send({firstName:''}).expect(400);
+ await require('../models/Settings').updateOne({_id:'hotel'},{$set:{onlineBooking:true}});
+ const reservation=await call('post','/api/bookings',ta).set('Idempotency-Key',randomUUID()).send(stay({email:a.email,checkIn:date(60),checkOut:date(61)})).expect(201);
+ const own=await call('get','/api/bookings/mine',ta).expect(200);assert.equal(own.body.length,1);assert.equal(own.body[0]._id,reservation.body.bookingId);assert.equal(own.body[0].idempotencyKey,undefined);
+ assert.equal((await call('get','/api/bookings/mine',tb).expect(200)).body.length,0);await call('get','/api/bookings/mine').expect(401);
+});
+test('branded email HTML escapes guest content and preserves text alternative',()=>{
+ const {emailHtml}=require('../config/mailer');const html=emailHtml('Booking <script>','Hello <img src=x onerror=alert(1)> & welcome');assert.ok(html.includes('CALM REST'));assert.ok(html.includes('&lt;img'));assert.ok(!html.includes('<script>'));assert.ok(!html.includes('<img'));assert.ok(delivery.some(m=>m.html && m.text));
+});
+
+test('email verification retrieves legacy guest bookings only after single-use proof of ownership',async()=>{
+ const User=require('../models/User');const user=await User.findOne({email:'two@example.test'});const token=require('../lib/session').session(user).token;
+ await require('../models/Booking').create(stay({email:user.email,checkIn:date(70),checkOut:date(71)}));
+ assert.equal((await call('get','/api/bookings/mine',token)).body.length,0);
+ nodemailer.createTransport=()=>({sendMail:async m=>{delivery.push(m);return {messageId:'verify-test'};}});
+ await call('post','/api/auth/verify-email/request',token).send({}).expect(200);
+ const message=delivery.findLast(m=>m.to===user.email && m.subject.includes('Verify'));const code=message.text.match(/code is ([0-9]{8})/)[1];
+ await call('post','/api/auth/verify-email/confirm',token).send({code:'00000000'}).expect(400);
+ await call('post','/api/auth/verify-email/confirm',token).send({code}).expect(200);
+ await call('post','/api/auth/verify-email/confirm',token).send({code}).expect(400);
+ assert.equal((await call('get','/api/bookings/mine',token)).body.length,1);
+ await call('post','/api/auth/verify-email/request',token).send({}).expect(200);
+ const lockedCode=delivery.findLast(m=>m.to===user.email && m.subject.includes('Verify')).text.match(/code is ([0-9]{8})/)[1];
+ for(let i=0;i<5;i++)await call('post','/api/auth/verify-email/confirm',token).send({code:'00000000'}).expect(400);
+ await call('post','/api/auth/verify-email/confirm',token).send({code:lockedCode}).expect(400);
+ await call('post','/api/auth/verify-email/request',token).send({}).expect(200);
+ const expiredCode=delivery.findLast(m=>m.to===user.email && m.subject.includes('Verify')).text.match(/code is ([0-9]{8})/)[1];
+ await User.updateOne({_id:user._id},{$set:{emailCodeExpires:new Date(0)}});
+ await call('post','/api/auth/verify-email/confirm',token).send({code:expiredCode}).expect(400);
+});

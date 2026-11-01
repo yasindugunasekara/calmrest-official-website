@@ -189,7 +189,7 @@ const Home = () => {
               <img
                 src="https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1767077294/DSC02255_kj4kat.jpg"
                 alt="Hotel Interior"
-                className="rounded-lg shadow-lg w-full object-cover"
+                className="rounded-lg shadow-lg w-full object-contain"
               />
             </div>
           </div>
@@ -232,7 +232,7 @@ const Home = () => {
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         loading="lazy" decoding="async" width={640} height={640}
                         alt={room.name}
-                        className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700"
+                        className="w-full aspect-square object-contain group-hover:scale-105 transition-transform duration-700"
                       />
                     ) : (
                       <div className="w-full aspect-square bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700">
@@ -403,7 +403,7 @@ const Home = () => {
               <img
                 src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=1"
                 alt="Guest"
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-contain"
               />
               <div>
                 <p className="font-semibold">Sarah Johnson</p>

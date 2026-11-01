@@ -1,3 +1,4 @@
+import {notify} from '../lib/notify';
 import { useEffect, useState } from "react";
 import axios from "../../services/api";
 import { Shield, Globe, Mail, Trash2, ShieldAlert } from "lucide-react";
@@ -55,7 +56,7 @@ export default function UsersPage() {
       setSelectedUser(null);
     } catch (err) {
       console.error("Error deleting user:", err);
-      alert("Failed to delete user. Please try again.");
+      notify("Failed to delete user. Please try again.");
     }
   };
 

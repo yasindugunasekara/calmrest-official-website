@@ -1,10 +1,11 @@
-const Services=lazy(()=>import("./pages/Services"));
-const PasswordRecovery = lazy(()=>import("./pages/auth/PasswordRecovery"));
 import { lazy, Suspense } from "react";
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
+const Services=lazy(()=>import("./pages/Services"));
+const PasswordRecovery = lazy(()=>import("./pages/auth/PasswordRecovery"));
 
 const Home = lazy(() => import("./pages/Home"));
 const Rooms = lazy(() => import("./pages/Rooms"));
@@ -55,7 +56,7 @@ function App() {
     <LanguageProvider>
       <Router>
         <LayoutWrapper>
-          <Suspense fallback={<p className="p-8 text-center" role="status">Loading…</p>}><Routes>
+          <Suspense fallback={<div className="p-12 text-center" role="status"><div className="w-10 h-10 mx-auto mb-4 rounded-full border-4 border-stone-200 border-t-amber-600 animate-spin"/>Preparing your stay…</div>}><Routes>
             {/* Main Pages */}
             <Route path="/" element={<Home />} />
             <Route path="/rooms" element={<Rooms />} />

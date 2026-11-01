@@ -1,3 +1,4 @@
+import {notify} from '../lib/notify';
 import { API_BASE_URL, apiFetch } from "../lib/api";
 import React, { useState, useEffect, useRef } from "react";
 
@@ -72,7 +73,7 @@ const WriteReview = () => {
       const data = await res.json();
       console.log("Review saved:", data);
 
-      alert("✅ Review submitted successfully!");
+      notify("✅ Review submitted successfully!");
 
       // Clear form
       setName("");
@@ -84,7 +85,7 @@ const WriteReview = () => {
       setStayDuration("");
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to submit review. Please try again.");
+      notify("❌ Failed to submit review. Please try again.");
     } finally {
       setLoading(false);
     }

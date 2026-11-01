@@ -1,3 +1,4 @@
+import {notify} from '../lib/notify';
 import { apiFetch } from "../../services/api";
 import React, { useState, useEffect } from "react";
 import {
@@ -109,7 +110,7 @@ export default function Rooms() {
       if(!response.ok) {const data=await response.json();throw new Error(data.error || "Unable to delete room");}
       fetchRooms();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Unable to delete room");
+      notify(err instanceof Error ? err.message : "Unable to delete room");
     } finally {
       setIsDeleteConfirmOpen(false);
       setRoomToDelete(null);
@@ -149,9 +150,9 @@ export default function Rooms() {
         // Append new item to the list
         setRooms((prev) => [...prev, savedRoom]);
       }
-      setIsModalOpen(false);setEditingRoom(null);
+      setIsModalOpen(false);setEditingRoom(null);notify("Room saved. Inventory and availability have been updated.","success");
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Unable to save room');
+      notify(err instanceof Error ? err.message : 'Unable to save room');
     }
   };
 
@@ -240,15 +241,15 @@ const RoomCard = ({
     >
       <div>
         {/* Photo Container */}
-        <div className="relative h-48 overflow-hidden bg-gray-50 border-b border-gray-50">
+        <div className="relative aspect-square overflow-hidden bg-gray-50 border-b border-gray-50">
           {room.images && room.images.length > 0 && !room.images[0].includes("placehold") && !room.images[0].includes("placeholder") ? (
             <img
               src={room.images[0]}
               alt={room.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain  transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
+            <div className="w-full h-full bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden  transition-transform duration-500">
               <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
               <span className="text-xl font-serif font-bold text-[#45392e] tracking-wide select-none text-center px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]">
@@ -350,6 +351,7 @@ interface RoomModalProps {
 }
 
 const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
+  const [saving,setSaving]=useState(false);
   const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
@@ -422,14 +424,14 @@ const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
       );
       widget.open();
     } else {
-      alert("Cloudinary script not loaded yet. Make sure internet connection is active.");
+      notify("Cloudinary script not loaded yet. Make sure internet connection is active.");
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(!formData.images.length) {alert("Add at least one room image.");return;}
-    onSave(formData);
+    if(!formData.images.length) {notify("Add at least one room image.");return;}
+    if(saving)return;setSaving(true);try{await onSave(formData);}finally{setSaving(false);}
   };
 
   const allAmenities = [
@@ -447,7 +449,7 @@ const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+        className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-2xl max-h-[92dvh] flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -455,7 +457,7 @@ const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
             <h2 className="text-base font-bold text-gray-800">
               {room ? "Edit Room Details" : "Create New Room Class"}
             </h2>
-            <p className="text-gray-400 text-[10px]">Populate fields and update room catalog.</p>
+            <p className="text-gray-400 text-[10px]">Add clear photos, a nightly price, guest capacity, and the number of physical rooms.</p>
           </div>
           <button
             onClick={onClose}
@@ -497,7 +499,7 @@ const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
         </div>
 
         {/* Form Body Scroll container */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-left">
+        <form id="room-editor" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-left">
           
           {activeTab === "general" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -665,7 +667,7 @@ const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {formData.images.map((img, idx) => (
                       <div key={idx} className="relative group rounded-xl overflow-hidden aspect-video bg-gray-100 border border-gray-150 shadow-sm">
-                        <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                        <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-contain" />
                         <button
                           type="button"
                           onClick={() =>
@@ -698,11 +700,10 @@ const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
             Cancel
           </button>
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit" form="room-editor" disabled={saving}
             className="px-5 py-2 bg-gold hover:bg-gold-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-gold/15 transition-all"
           >
-            {room ? "Update Room Portfolio" : "Confirm & Save Room"}
+            {saving ? "Saving room…" : room ? "Save room changes" : "Add room category"}
           </button>
         </div>
       </motion.div>

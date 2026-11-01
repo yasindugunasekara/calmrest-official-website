@@ -184,10 +184,10 @@ const Rooms = () => {
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         loading="lazy" decoding="async" width={640} height={640}
                     alt={room.name}
-                    className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700"
+                    className="w-full aspect-square object-contain  transition-transform duration-700"
                   />
                 ) : (
-                  <div className="w-full aspect-square bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700">
+                  <div className="w-full aspect-square bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden  transition-transform duration-700">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
                     <span className="text-3xl font-serif font-bold text-[#45392e] tracking-wide select-none text-center px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]">

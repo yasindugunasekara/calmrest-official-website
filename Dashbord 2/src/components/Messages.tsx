@@ -1,3 +1,4 @@
+import {notify} from '../lib/notify';
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
 import { apiFetch } from "../../services/api";
 import { useState, useEffect } from 'react';
@@ -69,7 +70,7 @@ export default function Messages() {
             const response = await apiFetch(`${API_BASE_URL}/messages/${id}`, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isRead:true})});
             if(!response.ok) throw new Error('Unable to mark message as read');
             setMessages(prev=>prev.map(m=>m._id===id?{...m,isRead:true}:m));
-        } catch { alert('Unable to update message. Please try again.'); }
+        } catch { notify('Unable to update message. Please try again.'); }
     };
 
     const confirmDelete = (msg: Message) => {
@@ -87,11 +88,11 @@ export default function Messages() {
             if (result.success) {
                 setMessages(prev => prev.filter(m => m._id !== selectedMessage._id));
             } else {
-                alert(result.error || "Failed to delete message.");
+                notify(result.error || "Failed to delete message.");
             }
         } catch (error) {
             console.error("Error deleting message:", error);
-            alert("Failed to delete message. Please try again.");
+            notify("Failed to delete message. Please try again.");
         } finally {
             setShowDeleteModal(false);
             setSelectedMessage(null);

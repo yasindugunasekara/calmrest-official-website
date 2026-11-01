@@ -1,6 +1,7 @@
+import { notify } from "../lib/notify";
 import { API_BASE_URL, apiFetch } from "../lib/api";
 import React, { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   User,
   Mail,
@@ -10,7 +11,8 @@ import {
   MessageSquare,
   ArrowRight,
   Lock,
-  ChevronDown
+  CheckCircle,
+  ChevronDown,
 } from "lucide-react";
 import { trackEcommerceEvent } from "../utils/analytics";
 
@@ -23,8 +25,18 @@ interface Room {
 
 const BookingForm: React.FC = () => {
   const [params] = useSearchParams();
-  const [submitting,setSubmitting] = useState(false);
-  const [feedback,setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [confirmation, setConfirmation] = useState<{
+    id: string;
+    status: string;
+    total: number;
+    room: string;
+    checkIn: string;
+    checkOut: string;
+  } | null>(null);
+  const [phone, setPhone] = useState("");
+  const [availability, setAvailability] = useState<number | null>(null);
   const requestKey = useRef(crypto.randomUUID());
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -35,11 +47,11 @@ const BookingForm: React.FC = () => {
   const [roomType, setRoomType] = useState("");
   const [specialRequest, setSpecialRequest] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
-  const selectedRoom=rooms.find(room=>room.name===roomType);
-  const pricePerNight=selectedRoom?.price || 0;
-  const rawNights=(Date.parse(checkOut)-Date.parse(checkIn))/86400000;
-  const nights=Number.isFinite(rawNights) && rawNights>0 ? rawNights : 0;
-  const totalPrice=Math.round(nights*pricePerNight*100)/100;
+  const selectedRoom = rooms.find((room) => room.name === roomType);
+  const pricePerNight = selectedRoom?.price || 0;
+  const rawNights = (Date.parse(checkOut) - Date.parse(checkIn)) / 86400000;
+  const nights = Number.isFinite(rawNights) && rawNights > 0 ? rawNights : 0;
+  const totalPrice = Math.round(nights * pricePerNight * 100) / 100;
   const [isGuestsOpen, setIsGuestsOpen] = useState(false);
   const [isRoomTypeOpen, setIsRoomTypeOpen] = useState(false);
 
@@ -71,7 +83,9 @@ const BookingForm: React.FC = () => {
 
   const selectRoomTypeOption = (name: string) => {
     setRoomType(name);
-    setGuests(value=>Math.min(value,rooms.find(room=>room.name===name)?.guests || 1));
+    setGuests((value) =>
+      Math.min(value, rooms.find((room) => room.name === name)?.guests || 1),
+    );
     setIsRoomTypeOpen(false);
   };
 
@@ -84,9 +98,10 @@ const BookingForm: React.FC = () => {
         setRooms(data);
 
         if (data.length > 0) {
-          const chosen=data.find(room=>room._id===params.get("room")) || data[0];
+          const chosen =
+            data.find((room) => room._id === params.get("room")) || data[0];
           setRoomType(chosen.name);
-          setGuests(value=>Math.min(value,chosen.guests));
+          setGuests((value) => Math.min(value, chosen.guests));
         }
       } catch {
         setFeedback("Rooms could not be loaded. Please refresh and try again.");
@@ -95,12 +110,48 @@ const BookingForm: React.FC = () => {
     fetchRooms();
   }, [params]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    apiFetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then(({ user }) => {
+        setFirstName(user.firstName || "");
+        setLastName(user.lastName || "");
+        setEmail(user.email || "");
+        setPhone(user.phone || "");
+      })
+      .catch(() => {
+        /* Guest checkout remains available. */
+      });
+  }, []);
+  useEffect(() => {
+    if (!checkIn || !checkOut || checkOut <= checkIn || !selectedRoom) return;
+    const controller = new AbortController();
+    apiFetch(`${API_BASE_URL}/rooms?checkIn=${checkIn}&checkOut=${checkOut}`, {
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((data: (Room & { available: number })[]) =>
+        setAvailability(
+          data.find((r) => r._id === selectedRoom._id)?.available ?? null,
+        ),
+      )
+      .catch(() => setAvailability(null));
+    return () => controller.abort();
+  }, [checkIn, checkOut, selectedRoom]);
   // Submit booking form
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(submitting) return;
-    if(!roomType || nights < 1 || !firstName.trim() || !lastName.trim()) {setFeedback("Choose a room, enter your name, and select a valid stay.");return;}
-    setSubmitting(true);setFeedback("");
+    if (submitting) return;
+    if (!roomType || nights < 1 || !firstName.trim() || !lastName.trim()) {
+      setFeedback("Choose a room, enter your name, and select a valid stay.");
+      return;
+    }
+    setSubmitting(true);
+    setFeedback("");
 
     const selectedRoom = rooms.find((r) => r.name === roomType);
     trackEcommerceEvent("begin_checkout", selectedRoom ? [selectedRoom] : [], {
@@ -118,13 +169,20 @@ const BookingForm: React.FC = () => {
       roomType,
       roomId: selectedRoom?._id,
       specialRequest,
+      phone,
       totalPrice, // store calculated price
     };
 
     try {
       const res = await apiFetch(`${API_BASE_URL}/bookings`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Idempotency-Key": requestKey.current },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": requestKey.current,
+          ...(localStorage.getItem("token")
+            ? { Authorization: `Bearer ${localStorage.getItem("token")}` }
+            : {}),
+        },
         body: JSON.stringify(bookingData),
       });
 
@@ -135,8 +193,18 @@ const BookingForm: React.FC = () => {
           value: totalPrice,
           currency: "USD",
         });
-        setFeedback(`Booking ${data.booking.status === "Confirmed" ? "confirmed" : "request received"}. Reference: ${data.bookingId}. Total: $${data.booking.totalPrice}.`);
-        requestKey.current=crypto.randomUUID();
+        setFeedback(
+          `Booking ${data.booking.status === "Confirmed" ? "confirmed" : "request received"}. Reference: ${data.bookingId}. Total: $${data.booking.totalPrice}.`,
+        );
+        setConfirmation({
+          id: data.bookingId,
+          status: data.booking.status,
+          total: data.booking.totalPrice,
+          room: roomType,
+          checkIn,
+          checkOut,
+        });
+        requestKey.current = crypto.randomUUID();
         setFirstName("");
         setLastName("");
         setEmail("");
@@ -145,45 +213,146 @@ const BookingForm: React.FC = () => {
         setGuests(2);
         setRoomType(rooms[0]?.name || "");
         setSpecialRequest("");
-
-
       } else {
         setFeedback(data.error || "Unable to submit booking.");
       }
     } catch (err) {
       console.error("Error submitting booking:", err);
       setFeedback(err instanceof Error ? err.message : "Please try again.");
-    } finally {setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const maxGuests = selectedRoom ? selectedRoom.guests : 8;
   const guestOptions = Array.from({ length: maxGuests }, (_, i) => i + 1);
 
+  if (confirmation)
+    return (
+      <section
+        role="status"
+        className="hotel-success max-w-xl mx-auto my-6 rounded-3xl bg-white border border-emerald-100 shadow-lg p-6 sm:p-10 text-center"
+      >
+        <CheckCircle
+          className="hotel-check mx-auto text-emerald-600 mb-5"
+          size={72}
+        />
+        <p className="text-xs uppercase tracking-widest text-gold mb-3">
+          Calm Rest · Midigama
+        </p>
+        <h2 className="font-serif text-3xl text-navy">
+          {confirmation.status === "Confirmed"
+            ? "Your stay is confirmed"
+            : "Your booking request is received"}
+        </h2>
+        <p className="text-slate-600 mt-3">
+          {confirmation.status === "Confirmed"
+            ? "We look forward to welcoming you."
+            : "Our team will review your request and contact you to confirm your stay."}
+        </p>
+        <div className="text-left rounded-xl bg-stone-50 p-5 my-6 space-y-2">
+          <strong>{confirmation.room}</strong>
+          <p>
+            {confirmation.checkIn} → {confirmation.checkOut}
+          </p>
+          <p>Total stay: USD {confirmation.total.toFixed(2)}</p>
+          <p className="text-xs break-all text-slate-500">
+            Reference: {confirmation.id}
+          </p>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">
+          Keep your reference handy. This reservation does not collect an online
+          payment.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link
+            to="/profile"
+            className="bg-navy text-white px-5 py-3 rounded-xl"
+          >
+            My bookings
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmation(null);
+              setFeedback("");
+            }}
+            className="border px-5 py-3 rounded-xl"
+          >
+            Book another stay
+          </button>
+        </div>
+      </section>
+    );
   return (
     <form
       onSubmit={handleBookingSubmit}
       className="w-full max-w-6xl mx-auto py-4 px-2"
     >
-      {feedback && <p role="status" className="p-4 mb-4 rounded-xl bg-amber-50 text-slate-900 border border-amber-200">{feedback}</p>}
+      {feedback && (
+        <p
+          role="status"
+          className="p-4 mb-4 rounded-xl bg-amber-50 text-slate-900 border border-amber-200"
+        >
+          {feedback}
+        </p>
+      )}
       {/* Form Header */}
       <div className="text-center mb-5">
-        <h3 className="text-2xl sm:text-3xl font-bold text-navy font-serif tracking-wide">Book Your Luxury Stay</h3>
-        <p className="text-gray-500 mt-1 text-sm">Experience tranquility and five-star luxury at Calm Rest</p>
+        <h3 className="text-2xl sm:text-3xl font-bold text-navy font-serif tracking-wide">
+          Plan your stay at Calm Rest
+        </h3>
+        <p className="text-gray-500 mt-1 text-sm">
+          Choose your dates, add your details, and review your stay.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
         {/* Left Columns: Inputs Grid (Span 2) */}
         <div className="lg:col-span-2 space-y-4">
-
+          {!localStorage.getItem("token") && (
+            <p className="rounded-xl bg-stone-50 border p-4 text-sm">
+              Already stayed with us?{" "}
+              <Link
+                to="/login"
+                onClick={() =>
+                  sessionStorage.setItem(
+                    "bookingReturn",
+                    location.pathname + location.search,
+                  )
+                }
+                className="underline font-semibold"
+              >
+                Sign in to fill your details
+              </Link>
+              , or continue as a guest.
+            </p>
+          )}
+          <label className="block text-sm text-slate-600">
+            Phone (optional)
+            <input
+              type="tel"
+              autoComplete="tel"
+              maxLength={30}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full border rounded-xl p-3 mt-1"
+              placeholder="Include your country code"
+            />
+          </label>
           {/* Row 1: First Name & Last Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3">
-              <span className="text-gold"><User size={18} /></span>
+              <span className="text-gold">
+                <User size={18} />
+              </span>
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">First Name</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                  First Name
+                </label>
                 <input
                   type="text"
+                  autoComplete="given-name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="John"
@@ -194,11 +363,16 @@ const BookingForm: React.FC = () => {
             </div>
 
             <div className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3">
-              <span className="text-gold"><User size={18} /></span>
+              <span className="text-gold">
+                <User size={18} />
+              </span>
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Last Name</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                  Last Name
+                </label>
                 <input
                   type="text"
+                  autoComplete="family-name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Doe"
@@ -212,11 +386,16 @@ const BookingForm: React.FC = () => {
           {/* Row 2: Email & Guests selection */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3">
-              <span className="text-gold"><Mail size={18} /></span>
+              <span className="text-gold">
+                <Mail size={18} />
+              </span>
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Email Address</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                  Email Address
+                </label>
                 <input
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="john.doe@example.com"
@@ -230,15 +409,22 @@ const BookingForm: React.FC = () => {
               onClick={toggleGuestsDropdown}
               className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3 pr-9 cursor-pointer select-none"
             >
-              <span className="text-gold"><Users size={18} /></span>
+              <span className="text-gold">
+                <Users size={18} />
+              </span>
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total Guests</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                  Total Guests
+                </label>
                 <div className="text-navy font-semibold text-sm sm:text-base">
                   {guests} Guest{guests > 1 ? "s" : ""}
                 </div>
               </div>
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gold transition-transform duration-300">
-                <ChevronDown size={16} className={`transition-transform duration-300 ${isGuestsOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-300 ${isGuestsOpen ? "rotate-180" : ""}`}
+                />
               </span>
 
               {/* Dropdown Options Popup */}
@@ -253,7 +439,9 @@ const BookingForm: React.FC = () => {
                       type="button"
                       onClick={() => selectGuestOption(num)}
                       className={`w-full text-left px-4 py-2 text-xs sm:text-sm font-semibold hover:bg-cream hover:text-gold transition-colors duration-200 ${
-                        guests === num ? "bg-cream/40 text-gold font-bold" : "text-navy font-medium"
+                        guests === num
+                          ? "bg-cream/40 text-gold font-bold"
+                          : "text-navy font-medium"
                       }`}
                     >
                       {num} Guest{num > 1 ? "s" : ""}
@@ -267,9 +455,13 @@ const BookingForm: React.FC = () => {
           {/* Row 3: Check-in & Check-out dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3">
-              <span className="text-gold"><Calendar size={18} /></span>
+              <span className="text-gold">
+                <Calendar size={18} />
+              </span>
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Check-in Date</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                  Check-in Date
+                </label>
                 <input
                   type="date"
                   value={checkIn}
@@ -282,16 +474,23 @@ const BookingForm: React.FC = () => {
             </div>
 
             <div className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3">
-              <span className="text-gold"><Calendar size={18} /></span>
+              <span className="text-gold">
+                <Calendar size={18} />
+              </span>
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Check-out Date</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                  Check-out Date
+                </label>
                 <input
                   type="date"
                   value={checkOut}
                   onChange={(e) => {
                     const selectedDate = e.target.value;
-                    if (checkIn && new Date(selectedDate) <= new Date(checkIn)) {
-                      alert("Check-out date must be after the check-in date.");
+                    if (
+                      checkIn &&
+                      new Date(selectedDate) <= new Date(checkIn)
+                    ) {
+                      notify("Check-out date must be after the check-in date.");
                     } else {
                       setCheckOut(selectedDate);
                     }
@@ -309,15 +508,22 @@ const BookingForm: React.FC = () => {
             onClick={toggleRoomTypeDropdown}
             className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3 pr-9 cursor-pointer select-none"
           >
-            <span className="text-gold"><Home size={18} /></span>
+            <span className="text-gold">
+              <Home size={18} />
+            </span>
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Select Room Category</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                Select Room Category
+              </label>
               <div className="text-navy font-semibold text-sm sm:text-base truncate">
                 {roomType || "Select a category"}
               </div>
             </div>
             <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gold transition-transform duration-300">
-              <ChevronDown size={16} className={`transition-transform duration-300 ${isRoomTypeOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-300 ${isRoomTypeOpen ? "rotate-180" : ""}`}
+              />
             </span>
 
             {/* Dropdown Options Popup */}
@@ -332,7 +538,9 @@ const BookingForm: React.FC = () => {
                     type="button"
                     onClick={() => selectRoomTypeOption(room.name)}
                     className={`w-full text-left px-4 py-2 text-xs sm:text-sm font-semibold hover:bg-cream hover:text-gold transition-colors duration-200 ${
-                      roomType === room.name ? "bg-cream/40 text-gold font-bold" : "text-navy font-medium"
+                      roomType === room.name
+                        ? "bg-cream/40 text-gold font-bold"
+                        : "text-navy font-medium"
                     }`}
                   >
                     {room.name}
@@ -344,9 +552,13 @@ const BookingForm: React.FC = () => {
 
           {/* Row 5: Special Requests */}
           <div className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-start space-x-3">
-            <span className="text-gold mt-1"><MessageSquare size={18} /></span>
+            <span className="text-gold mt-1">
+              <MessageSquare size={18} />
+            </span>
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Special Requests</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                Special Requests
+              </label>
               <textarea
                 value={specialRequest}
                 onChange={(e) => setSpecialRequest(e.target.value)}
@@ -356,18 +568,20 @@ const BookingForm: React.FC = () => {
               />
             </div>
           </div>
-
         </div>
 
         {/* Right Column: Booking Summary Sidebar (Span 1) */}
         <div className="lg:col-span-1 lg:sticky lg:top-8 self-start">
           <div className="bg-cream/40 border border-gold/15 rounded-2xl p-4 md:p-5 space-y-4 shadow-sm flex flex-col justify-between">
-
             <div className="space-y-4">
               {/* Summary Header */}
               <div className="border-b border-gray-200/60 pb-3">
-                <h4 className="text-lg font-serif font-bold text-navy">Reservation Summary</h4>
-                <p className="text-gray-400 text-xs mt-0.5">Summary of your package</p>
+                <h4 className="text-lg font-serif font-bold text-navy">
+                  Reservation Summary
+                </h4>
+                <p className="text-gray-400 text-xs mt-0.5">
+                  One room · price for the complete stay
+                </p>
               </div>
 
               {/* Package Details */}
@@ -376,21 +590,33 @@ const BookingForm: React.FC = () => {
                 <div className="flex items-start space-x-3">
                   <Home size={18} className="text-gold flex-shrink-0 mt-0.5" />
                   <div>
-                    <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">Accommodation</span>
-                    <span className="text-sm font-semibold text-navy">{roomType || "No room selected"}</span>
+                    <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      Accommodation
+                    </span>
+                    <span className="text-sm font-semibold text-navy">
+                      {roomType || "No room selected"}
+                    </span>
                   </div>
                 </div>
 
                 {/* Date Grid */}
                 <div className="flex items-center justify-between text-sm text-navy bg-white border border-gray-100 p-3.5 rounded-xl shadow-sm">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Check-in</span>
-                    <span className="font-semibold text-xs sm:text-sm">{checkIn || "Select date"}</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      Check-in
+                    </span>
+                    <span className="font-semibold text-xs sm:text-sm">
+                      {checkIn || "Select date"}
+                    </span>
                   </div>
                   <ArrowRight size={16} className="text-gold mx-2" />
                   <div className="flex flex-col text-right">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Check-out</span>
-                    <span className="font-semibold text-xs sm:text-sm">{checkOut || "Select date"}</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      Check-out
+                    </span>
+                    <span className="font-semibold text-xs sm:text-sm">
+                      {checkOut || "Select date"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -399,28 +625,50 @@ const BookingForm: React.FC = () => {
               <div className="space-y-2.5 border-t border-gray-200/60 pt-3.5 text-xs sm:text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>Nightly Rate</span>
-                  <span className="font-semibold text-navy">${pricePerNight}</span>
+                  <span className="font-semibold text-navy">
+                    ${pricePerNight}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Nights Duration</span>
-                  <span className="font-semibold text-navy">{nights} night{nights !== 1 ? "s" : ""}</span>
+                  <span className="font-semibold text-navy">
+                    {nights} night{nights !== 1 ? "s" : ""}
+                  </span>
                 </div>
 
                 {/* Grand Total */}
                 <div className="border-t border-dashed border-gray-200 pt-2.5 flex justify-between items-baseline">
-                  <span className="text-navy font-bold text-sm sm:text-base">Grand Total</span>
-                  <span className={`text-xl sm:text-2xl font-bold font-serif ${totalPrice > 0 ? "text-gold" : "text-red-500"}`}>
+                  <span className="text-navy font-bold text-sm sm:text-base">
+                    Grand Total
+                  </span>
+                  <span
+                    className={`text-xl sm:text-2xl font-bold font-serif ${totalPrice > 0 ? "text-gold" : "text-red-500"}`}
+                  >
                     {totalPrice > 0 ? `$${totalPrice}` : "Not available"}
                   </span>
                 </div>
               </div>
             </div>
 
+            {checkOut > checkIn && availability !== null && (
+              <p
+                role="status"
+                className={`text-sm p-3 rounded-lg ${availability > 0 ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-900"}`}
+              >
+                {availability > 0
+                  ? `${availability} room${availability === 1 ? "" : "s"} available for your dates. Availability is checked again when you book.`
+                  : "Fully booked for these dates. Try another room or change your dates."}
+              </p>
+            )}
             {/* Form CTA Submit Button */}
             <div>
               <button
                 type="submit"
-                disabled={submitting || !rooms.length}
+                disabled={
+                  submitting ||
+                  !rooms.length ||
+                  (checkOut > checkIn && availability === 0)
+                }
                 className="w-full bg-gold hover:bg-opacity-95 text-white py-3 rounded-xl transition-all duration-300 font-bold uppercase tracking-wider text-xs sm:text-sm shadow-md shadow-gold/25 mt-4 hover:-translate-y-0.5 focus:outline-none flex items-center justify-center space-x-2"
               >
                 <span>{submitting ? "Submitting…" : "Request Booking"}</span>
@@ -432,10 +680,8 @@ const BookingForm: React.FC = () => {
                 <span>Secure reservation with Calm Rest</span>
               </div>
             </div>
-
           </div>
         </div>
-
       </div>
     </form>
   );

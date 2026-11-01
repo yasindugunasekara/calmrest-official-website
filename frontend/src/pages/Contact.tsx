@@ -1,3 +1,4 @@
+import {notify} from '../lib/notify';
 import { API_BASE_URL } from "../lib/api";
 import React, { useState, useEffect } from "react";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
@@ -42,7 +43,7 @@ const Contact = () => {
         message: "",
       });
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Unable to send your question. Please try again.");
+      notify(error instanceof Error ? error.message : "Unable to send your question. Please try again.");
       setSuccess(false);
     } finally {
       setLoading(false);

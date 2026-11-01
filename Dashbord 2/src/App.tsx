@@ -57,7 +57,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <Router>
-      <Suspense fallback={<p className="p-8 text-center" role="status">Loading…</p>}><Routes>
+      <Suspense fallback={<div className="p-12 text-center" role="status"><div className="w-10 h-10 mx-auto mb-4 rounded-full border-4 border-stone-200 border-t-amber-600 animate-spin"/>Opening your workspace…</div>}><Routes>
         {/* Default Route */}
 
         <Route

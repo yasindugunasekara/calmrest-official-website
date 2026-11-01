@@ -1,6 +1,7 @@
+import {notify} from '../../lib/notify';
 import { API_BASE_URL, apiFetch } from "../../lib/api";
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { trackEvent } from "../../utils/analytics";
 
 const countries = [
@@ -14,6 +15,7 @@ const countries = [
 ];
 
 const Register: React.FC = () => {
+  const navigate=useNavigate();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -67,8 +69,9 @@ const Register: React.FC = () => {
 
       if (res.ok) {
         trackEvent("sign_up", { method: "email" });
-        alert("Registration Successful!");
-        console.log("User registered:", data);
+        notify("Registration Successful!");
+        const login=await apiFetch(`${API_BASE_URL}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:form.email,password:form.password})});
+        const session=await login.json();localStorage.setItem('token',session.token);localStorage.setItem('user',JSON.stringify(session.user));navigate(sessionStorage.getItem('bookingReturn') || '/book');
 
         setForm({
           firstName: "",

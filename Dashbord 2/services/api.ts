@@ -10,7 +10,7 @@ api.interceptors.request.use(config => {
  }
  return config;
 });
-api.interceptors.response.use(response => response, error => {
+api.interceptors.response.use(response => {if(response.config.method && response.config.method!=='get') window.dispatchEvent(new Event('hotel-data-changed'));return response;}, error => {
  if (error.response?.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); if (location.pathname !== '/login') location.replace('/login'); }
  return Promise.reject(error);
 });
@@ -22,6 +22,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
  if (token && target.origin === base.origin && target.pathname.startsWith(base.pathname)) headers.set('Authorization', `Bearer ${token}`);
  const response = await fetch(input, { ...init, headers, signal: init?.signal || AbortSignal.timeout(20000) });
  if (response.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); if (location.pathname !== '/login') location.replace('/login'); }
+ if(response.ok && init?.method && init.method!=='GET') window.dispatchEvent(new Event('hotel-data-changed'));
  return response;
 }
 export default api;

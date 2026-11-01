@@ -1,3 +1,4 @@
+import {notify} from '../lib/notify';
 import {useSearchParams} from "react-router-dom";
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
 import { useEffect, useState } from "react";
@@ -65,11 +66,11 @@ export default function Bookings() {
       if (response.data.success) {
         setBookings((prev) => prev.filter((b) => b._id !== selectedBooking._id));
       } else {
-        alert(response.data.error || "Failed to delete booking.");
+        notify(response.data.error || "Failed to delete booking.");
       }
     } catch (error) {
       console.error("Error deleting booking:", error);
-      alert("Failed to delete booking. Please try again.");
+      notify("Failed to delete booking. Please try again.");
     } finally {
       setShowDeleteModal(false);
       setSelectedBooking(null);
@@ -234,7 +235,7 @@ export default function Bookings() {
                               }
                             } catch (err) {
                               console.error("Failed to confirm booking:", err);
-                              alert("Could not update reservation status. Please try again.");
+                              notify("Could not update reservation status. Please try again.");
                             }
                           }
                         }}
@@ -404,7 +405,7 @@ export default function Bookings() {
                 </button>
                 
                 <label className="block text-sm font-semibold">Reservation status
-                  <select className="border rounded-lg p-2 ml-3" value={selectedDetailsBooking.status || 'Pending'} onChange={async e=>{const status=e.target.value;try{const {data}=await axios.put(`${API_BASE_URL}/bookings/${selectedDetailsBooking._id}`,{status});setBookings(prev=>prev.map(b=>b._id===data.booking._id?data.booking:b));setSelectedDetailsBooking(data.booking);}catch(error){alert((error as {response?:{data?:{error?:string}}}).response?.data?.error || 'Unable to change status');}}}>
+                  <select className="border rounded-lg p-2 ml-3" value={selectedDetailsBooking.status || 'Pending'} onChange={async e=>{const status=e.target.value;try{const {data}=await axios.put(`${API_BASE_URL}/bookings/${selectedDetailsBooking._id}`,{status});setBookings(prev=>prev.map(b=>b._id===data.booking._id?data.booking:b));setSelectedDetailsBooking(data.booking);}catch(error){notify((error as {response?:{data?:{error?:string}}}).response?.data?.error || 'Unable to change status');}}}>
                     {['Pending','Confirmed','Checked In','Checked Out','Cancelled'].map(status=><option key={status}>{status}</option>)}
                   </select>
                 </label>
@@ -425,7 +426,7 @@ export default function Bookings() {
                         }
                       } catch (err) {
                         console.error("Failed to confirm booking:", err);
-                        alert("Could not update reservation status. Please try again.");
+                        notify("Could not update reservation status. Please try again.");
                       }
                     }}
                     className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-lg shadow-emerald-500/10"

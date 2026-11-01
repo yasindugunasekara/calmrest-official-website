@@ -1,3 +1,4 @@
+import {notify} from '../lib/notify';
 import api from "../../services/api";
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
 import { apiFetch } from "../../services/api";
@@ -172,7 +173,7 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
     try {
       await Promise.all(notifications.filter(n=>n.type==='message' && !n.isRead).map(n=>apiFetch(`${API_BASE_URL}/messages/${n.id.slice(2)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isRead:true})}).then(response=>{if(!response.ok)throw new Error('Unable to update notifications');})));
       setNotifications(prev=>prev.map(n=>({...n,isRead:true})));
-    } catch {alert('Unable to update notifications. Please try again.');}
+    } catch {notify('Unable to update notifications. Please try again.');}
   };
 
   const getFormattedDate = () => {

@@ -1,3 +1,4 @@
+import {notify} from '../../lib/notify';
 import { API_BASE_URL, apiFetch } from "../../lib/api";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,6 +15,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [linkToken,setLinkToken]=useState('');
+  const [linkPassword,setLinkPassword]=useState('');
 
   // 🔐 Normal Login (existing)
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,12 +45,12 @@ const Login = () => {
         }, 1200);
       } else {
         setSuccess(false);
-        alert(data.message || "Login failed");
+        notify(data.message || "Login failed");
       }
     } catch (err) {
       console.error("Login error:", err);
       setSuccess(false);
-      alert(err instanceof Error ? err.message : "Login failed. Please try again.");
+      notify(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -56,19 +59,21 @@ const Login = () => {
   const handleGoogleLogin = async () => {
   setGoogleLoading(true);
   try {
-    const user = await signInWithGoogle();
+    const idToken = linkToken || await (await signInWithGoogle()).getIdToken();
 
-    const res = await apiFetch(`${API_BASE_URL}/auth/google`, {
+    const res = await fetch(`${API_BASE_URL}/auth/google`, {
+      signal:AbortSignal.timeout(20000),
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        idToken: await user.getIdToken(),
+        idToken, password:linkPassword || undefined,
       }),
     });
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.error || "Google login failed");
+      if(errData.code==='LINK_PASSWORD_REQUIRED'){setLinkToken(idToken);return;}
+      throw new Error(errData.error || 'Google login failed');
     }
 
     const data = await res.json();
@@ -77,7 +82,7 @@ const Login = () => {
     navigate(sessionStorage.getItem("bookingReturn") || "/book");
   } catch (err: unknown) {
     console.error("Google login failed:", err);
-    alert("Google login failed: " + (err instanceof Error ? err.message : "Please try again"));
+    notify("Google login failed: " + (err instanceof Error ? err.message : "Please try again"));
   } finally {
     setGoogleLoading(false);
   }
@@ -94,8 +99,8 @@ const Login = () => {
           className="w-full h-full object-cover"
         />
         <div className="absolute bottom-8 left-8 text-white max-w-sm">
-          <h2 className="text-3xl font-bold mb-2">Find your sweet home</h2>
-          <p className="text-lg">Schedule visits in just a few clicks.</p>
+          <h2 className="text-3xl font-bold mb-2">Welcome to your coastal retreat</h2>
+          <p className="text-lg">Your next coastal escape starts here.</p>
         </div>
       </div>
 
@@ -147,9 +152,7 @@ const Login = () => {
 
             {/* Remember + Forgot */}
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="w-4 h-4" /> Remember Me
-              </label>
+              <span className="text-gray-500">Secure guest sign-in</span>
               <Link to="/forgot-password" className="text-gold hover:underline">
                 Forgot Password?
               </Link>
@@ -158,7 +161,7 @@ const Login = () => {
             {/* Login Button */}
             <button
               type="submit"
-              disabled={loading || success}
+              disabled={loading || googleLoading || success}
               className={`w-full py-2 rounded text-white transition-all duration-300 flex items-center justify-center space-x-2 font-medium
                 ${success ? "bg-green-600" : "bg-black hover:bg-gray-800"}
                 ${loading ? "opacity-90 cursor-not-allowed" : ""}`}
@@ -177,10 +180,12 @@ const Login = () => {
                 <span>Login</span>
               )}
             </button>
+            {linkToken && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3" role="status"><p className="text-sm">You already have a Calm Rest account. Confirm its password once to connect Google securely.</p><label className="block text-sm">Existing account password<input type="password" autoComplete="current-password" value={linkPassword} onChange={e=>setLinkPassword(e.target.value)} className="block w-full border rounded-lg p-3 mt-2"/></label><Link to="/forgot-password" className="text-sm underline">Forgot your password?</Link><button type="button" className="block text-sm underline" onClick={()=>{setLinkToken('');setLinkPassword('');}}>Cancel linking</button></div>}
             {/* Google Login */}
           <button
+            type="button"
             onClick={handleGoogleLogin}
-            disabled={googleLoading}
+            disabled={googleLoading || loading}
             className="w-full border flex items-center justify-center gap-3 py-2 rounded-lg mb-5 hover:bg-gray-100"
           >
             {googleLoading ? (
@@ -195,7 +200,7 @@ const Login = () => {
                   alt="Google"
                   className="w-5 h-5"
                 />
-                <span>Continue with Google</span>
+                <span>{linkToken ? "Connect Google & sign in" : "Continue with Google"}</span>
               </>
             )}
           </button>

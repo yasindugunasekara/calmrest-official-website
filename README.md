@@ -42,3 +42,15 @@ The original repository tracked `backend/.env`. It is now untracked and ignored,
 Rate limits use per-instance memory. For high traffic or distributed abuse protection across Vercel instances, use a shared rate-limit store or Vercel WAF. Email jobs retry during submissions or explicit administrator retries; no recurring background scheduler has been provisioned. Existing legacy booking documents keep their original data; missing statuses are treated conservatively as pending reservations and unknown historical prices are not guessed.
 
 Browser automation was unavailable in this session, so production HTTP checks, builds and automated tests do not substitute for manual mobile/desktop visual QA or a real Google popup sign-in test.
+
+
+### Guest experience and inventory update — November 2026
+
+- Room gallery and cards show complete photos using square frames and contain fitting. Decorative hero images retain their own presentation.
+- Existing password accounts can connect Google after verifying the Google ID token and confirming the existing password once. Subsequent Google sign-ins preserve the same account and local password access.
+- `/api/bookings/mine` returns account-owned reservations. Earlier guest reservations are visible only after verified Google identity or an eight-digit email verification code. Codes expire after ten minutes, are single-use, and stop working after five incorrect attempts; endpoint throttling also applies.
+- Guests can save name, country, and phone in My account. Booking forms prefill signed-in details, show availability for the requested stay, and display a reference and accurate pending/confirmed success state. New accounts sign in after registration.
+- Email includes escaped branded HTML and a plain-text alternative. Booking status changes queue guest updates when guest notifications are enabled. SMTP delivery remains queued and retryable through admin settings; queuing is not proof of inbox delivery.
+- The dashboard refreshes every 30 seconds while visible and on focus/mutations. Its seven-night planner subtracts overlapping active reservations from each category's physical inventory, excluding departure night. The room editor validates form fields and prevents duplicate clicks while saving.
+- Short-lived (20-second) browser memory caching applies only to the public room catalogue. Date-specific availability, authentication, and private data are not cached. Booking writes still revalidate inventory transactionally.
+- Shared notifications, session loading, and booking success animations respect reduced-motion preferences. Local browser checks cover 390px and 1440px guest and admin layouts using mocked API fixtures; live Google popup and actual inbox receipt require a real account.

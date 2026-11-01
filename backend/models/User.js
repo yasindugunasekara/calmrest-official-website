@@ -2,19 +2,52 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    firstName: { type: String, required: function() { return this.provider !== "google"; } },
-    lastName: { type: String, required: function() { return this.provider !== "google"; } },
-    country: { type: String, required: function() { return this.provider !== "google"; } },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxLength: 254 },
+    firstName: {
+      type: String,
+      required: function () {
+        return this.provider !== "google";
+      },
+    },
+    lastName: {
+      type: String,
+      required: function () {
+        return this.provider !== "google";
+      },
+    },
+    country: {
+      type: String,
+      required: function () {
+        return this.provider !== "google";
+      },
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      maxLength: 254,
+    },
+    emailVerified: { type: Boolean, default: false },
+    emailCodeAttempts: { type: Number, default: 0 },
+    emailCodeHash: { type: String, select: false },
+    emailCodeExpires: { type: Date, select: false },
     resetPasswordHash: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },
     tokenVersion: { type: Number, default: 0 },
     googleUid: { type: String },
-    password: { select: false, type: String, required: function() { return this.provider !== "google"; } }, // required only for normal signup
+    phone: { type: String, maxLength: 30 },
+    password: {
+      select: false,
+      type: String,
+      required: function () {
+        return this.provider !== "google";
+      },
+    }, // required only for normal signup
     role: { type: String, enum: ["user", "admin"], default: "user" },
     provider: { type: String, enum: ["local", "google"], default: "local" },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("User", userSchema);

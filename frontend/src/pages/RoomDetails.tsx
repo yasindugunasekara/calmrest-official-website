@@ -206,12 +206,12 @@ const RoomDetails: React.FC = () => {
 
             {/* Gallery Section */}
             <div>
-              <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden shadow-md group/gallery bg-gray-900">
+              <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-md group/gallery bg-stone-100">
                 {images[activeIndex] && !images[activeIndex].includes("placehold") && !images[activeIndex].includes("placeholder") ? (
                   <>
                     <img
                       src={imageUrl(images[activeIndex],1200)} decoding="async"
-                      className="w-full h-full object-cover transition-all duration-700 select-none cursor-pointer"
+                      className="w-full h-full object-contain transition-all duration-700 select-none cursor-pointer"
                       alt={`${room.name} view`}
                       onClick={() => setIsFullscreen(true)}
                     />
@@ -266,7 +266,7 @@ const RoomDetails: React.FC = () => {
                           : "border-transparent opacity-70 hover:opacity-100"
                       }`}
                     >
-                      <img src={imageUrl(img,200)} loading="lazy" decoding="async" alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={imageUrl(img,200)} loading="lazy" decoding="async" alt={`Thumbnail ${index + 1}`} className="w-full h-full object-contain" />
                     </button>
                   ))}
                 </div>
@@ -367,7 +367,7 @@ const RoomDetails: React.FC = () => {
             <div className="bg-green-50/50 border border-green-200/60 rounded-2xl p-5 mt-6 flex items-start space-x-3.5 shadow-inner">
               <ShieldCheck className="text-green-600 w-6 h-6 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-green-900 text-sm sm:text-base">Free Cancellation Policies</h4>
+                <h4 className="font-bold text-green-900 text-sm sm:text-base">Cancellation information</h4>
                 <p className="text-green-800 text-xs sm:text-sm mt-1 leading-relaxed">
                   Please contact Calm Rest to confirm the cancellation terms for your reservation before booking.
                 </p>
@@ -427,7 +427,7 @@ const RoomDetails: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2.5 text-gray-600">
                   <Check size={16} className="text-green-600 flex-shrink-0" />
-                  <span>Best price guaranteed</span>
+                  <span>Book directly with Calm Rest</span>
                 </div>
                 <div className="flex items-center space-x-2.5 text-gray-600">
                   <Check size={16} className="text-green-600 flex-shrink-0" />
