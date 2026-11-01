@@ -1,3 +1,4 @@
+import { apiFetch } from "../../services/api";
 import React, { useState, useEffect } from "react";
 import {
   Plus,
@@ -14,7 +15,6 @@ import {
   Star,
   Maximize2,
   Image as ImageIcon,
-  CheckCircle,
   HelpCircle,
   AlertTriangle
 } from "lucide-react";
@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 // Extend global window interface for Cloudinary
 declare global {
   interface Window {
-    cloudinary: any;
+    cloudinary?: { createUploadWidget: (options: Record<string,unknown>, callback: (error:unknown,result?:{event:string;info:{secure_url:string}})=>void)=>{open:()=>void} };
   }
 }
 
@@ -48,12 +48,13 @@ interface Room {
   description: string;
   guests: number;
   price: number;
+  inventory: number;
   images: string[];
   rating?: number;
   size?: number;
   bed?: string;
   amenities?: string[];
-  features?: string[];
+  features?: (string | {name:string;icon?:string})[];
 }
 
 export default function Rooms() {
@@ -64,16 +65,16 @@ export default function Rooms() {
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
 
   useEffect(() => {
     fetchRooms();
   }, []);
 
-  const fetchRooms = async () => {
+  async function fetchRooms() {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms`);
+      const res = await apiFetch(`${(import.meta.env.VITE_API_BASE_URL || "/api")}/rooms`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setRooms(data);
@@ -102,12 +103,13 @@ export default function Rooms() {
   const confirmDelete = async () => {
     if (!roomToDelete) return;
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms/${roomToDelete._id}`, {
+      const response = await apiFetch(`${(import.meta.env.VITE_API_BASE_URL || "/api")}/rooms/${roomToDelete._id}`, {
         method: "DELETE",
       });
+      if(!response.ok) {const data=await response.json();throw new Error(data.error || "Unable to delete room");}
       fetchRooms();
     } catch (err) {
-      console.error("Failed to delete room:", err);
+      alert(err instanceof Error ? err.message : "Unable to delete room");
     } finally {
       setIsDeleteConfirmOpen(false);
       setRoomToDelete(null);
@@ -124,19 +126,19 @@ export default function Rooms() {
 
       const payload = {
         ...roomData,
-        features: (roomData.features || []).map((f: any) => ({
+        features: (roomData.features || []).map((f) => ({
           name: typeof f === 'string' ? f : (f.name || ""),
           icon: "Check"
         }))
       };
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save room details");
+      if (!res.ok) {const data=await res.json();throw new Error(data.error || "Failed to save room details");}
       
       const savedRoom = await res.json();
       
@@ -147,11 +149,9 @@ export default function Rooms() {
         // Append new item to the list
         setRooms((prev) => [...prev, savedRoom]);
       }
+      setIsModalOpen(false);setEditingRoom(null);
     } catch (err) {
-      console.error("Failed to save room:", err);
-    } finally {
-      setIsModalOpen(false);
-      setEditingRoom(null);
+      alert(err instanceof Error ? err.message : 'Unable to save room');
     }
   };
 
@@ -203,9 +203,8 @@ export default function Rooms() {
       {/* Add / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <RoomModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+          <RoomModal key={editingRoom?._id || "new-room"}
+              onClose={() => setIsModalOpen(false)}
             onSave={handleSaveRoom}
             room={editingRoom}
           />
@@ -345,51 +344,21 @@ const RoomCard = ({
 
 // --- ADD / EDIT MODAL COMPONENT ---
 interface RoomModalProps {
-  isOpen: boolean;
   onClose: () => void;
-  onSave: (roomData: any) => void;
+  onSave: (roomData: Omit<Room,"_id">) => Promise<void>;
   room: Room | null;
 }
 
-const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
+const RoomModal = ({ onClose, onSave, room }: RoomModalProps) => {
   const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
   const [activeTab, setActiveTab] = useState<"general" | "amenities" | "media">("general");
 
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    price: 0,
-    rating: 5,
-    size: 30,
-    guests: 2,
-    bed: "King Bed",
-    images: [] as string[],
-    description: "",
-    amenities: [] as string[],
-    features: [] as string[],
+  const [formData,setFormData]=useState({
+    name:room?.name || '',category:room?.category || '',price:room?.price || 0,inventory:room?.inventory || 1,rating:room?.rating || 0,size:Number.parseFloat(String(room?.size || '30')) || 30,guests:room?.guests || 2,bed:room?.bed || 'King Bed',images:room?.images || [],description:room?.description || '',amenities:room?.amenities || [],features:(room?.features || []).map(f=>typeof f==='string'?f:f.name),
   });
-
-  const [newFeature, setNewFeature] = useState("");
-
-  useEffect(() => {
-    if (room) {
-      setFormData({
-        name: room.name || "",
-        category: room.category || "",
-        price: room.price || 0,
-        rating: room.rating || 5,
-        size: room.size || 30,
-        guests: room.guests || 2,
-        bed: room.bed || "King Bed",
-        images: room.images || [],
-        description: room.description || "",
-        amenities: room.amenities || [],
-        features: (room.features || []).map((f: any) => typeof f === 'object' && f !== null ? (f.name || "") : String(f)),
-      });
-    }
-  }, [room]);
+  const [newFeature,setNewFeature]=useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -436,11 +405,14 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
           uploadPreset: CLOUDINARY_UPLOAD_PRESET,
           sources: ["local", "camera", "url"],
           multiple: true,
+          maxFiles: 12,
+          maxImageFileSize: 10000000,
+          clientAllowedFormats: ["jpg", "jpeg", "png", "webp", "avif"],
           folder: "Rooms",
         },
-        (error: any, result: any) => {
+        (error: unknown, result?: {event:string;info:{secure_url:string}}) => {
           if (!error && result && result.event === "success") {
-            const webpUrl = result.info.secure_url.replace(/\.[^/.]+$/, ".webp");
+            const webpUrl = result.info.secure_url;
             setFormData((prev) => ({
               ...prev,
               images: [...prev.images, webpUrl],
@@ -456,6 +428,7 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if(!formData.images.length) {alert("Add at least one room image.");return;}
     onSave(formData);
   };
 
@@ -568,6 +541,8 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
                 onChange={handleChange}
               />
               <InputField
+                label="Room inventory" name="inventory" type="number" min="1" max="1000" required value={formData.inventory} onChange={handleChange} />
+              <InputField
                 label="Star Rating"
                 name="rating"
                 type="number"
@@ -617,7 +592,7 @@ const RoomModal = ({ isOpen, onClose, onSave, room }: RoomModalProps) => {
                         className="w-4 h-4 rounded text-gold focus:ring-gold border-gray-200"
                       />
                       <span className="text-xs font-semibold capitalize text-gray-600 flex items-center gap-1.5">
-                        <AmenityIcon amenity={amenity as any} />
+                        <AmenityIcon amenity={amenity as keyof typeof iconMap} />
                         {amenity.replace(/([A-Z])/g, " $1")}
                       </span>
                     </label>

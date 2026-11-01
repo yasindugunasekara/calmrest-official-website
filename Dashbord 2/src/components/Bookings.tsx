@@ -1,6 +1,7 @@
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { Search, Filter, Trash2, Calendar, Mail, User, Layers, ArrowUpDown, ChevronDown, X } from "lucide-react";
+import axios from "../../services/api";
+import { Search, Trash2, Calendar, Mail, Layers, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Booking {
@@ -27,7 +28,7 @@ export default function Bookings() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedDetailsBooking, setSelectedDetailsBooking] = useState<Booking | null>(null);
 
-  const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;
+
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -35,7 +36,7 @@ export default function Bookings() {
         const response = await axios.get<Booking[]>(`${API_BASE_URL}/bookings`);
         const dataWithStatus = response.data.map((b) => ({
           ...b,
-          status: b.status || "Confirmed", // Default to Confirmed if none provided
+          status: b.status || "Pending", // Default to Confirmed if none provided
         }));
         setBookings(dataWithStatus);
       } catch (error) {
@@ -87,7 +88,7 @@ export default function Bookings() {
     try {
       if (!id || id.length < 8) return 0;
       return parseInt(id.substring(0, 8), 16) * 1000;
-    } catch(e) {
+    } catch {
       return 0;
     }
   };
@@ -168,12 +169,6 @@ export default function Bookings() {
               ) : sortedFilteredBookings.length > 0 ? (
                 sortedFilteredBookings.map((b) => {
                   // Determine beautiful status colors
-                  const statusColors = {
-                    Confirmed: "bg-emerald-50 text-emerald-700 border-emerald-100",
-                    Pending: "bg-amber-50 text-amber-700 border-amber-100",
-                    Cancelled: "bg-rose-50 text-rose-700 border-rose-100",
-                  };
-                  const colorClass = statusColors[b.status as keyof typeof statusColors] || "bg-gray-50 text-gray-700 border-gray-100";
 
                   return (
                     <tr
@@ -405,6 +400,11 @@ export default function Bookings() {
                   Close
                 </button>
                 
+                <label className="block text-sm font-semibold">Reservation status
+                  <select className="border rounded-lg p-2 ml-3" value={selectedDetailsBooking.status || 'Pending'} onChange={async e=>{const status=e.target.value;try{const {data}=await axios.put(`${API_BASE_URL}/bookings/${selectedDetailsBooking._id}`,{status});setBookings(prev=>prev.map(b=>b._id===data.booking._id?data.booking:b));setSelectedDetailsBooking(data.booking);}catch(error){alert((error as {response?:{data?:{error?:string}}}).response?.data?.error || 'Unable to change status');}}}>
+                    {['Pending','Confirmed','Checked In','Checked Out','Cancelled'].map(status=><option key={status}>{status}</option>)}
+                  </select>
+                </label>
                 {selectedDetailsBooking.status !== "Confirmed" && (
                   <button
                     type="button"

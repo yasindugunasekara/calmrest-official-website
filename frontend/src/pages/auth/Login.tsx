@@ -1,9 +1,10 @@
+import { API_BASE_URL, apiFetch } from "../../lib/api";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { signInWithGoogle } from "../../firebase"; // ✅ import Firebase helper
 import { trackEvent } from "../../utils/analytics";
-import axios from "axios";
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,13 +16,13 @@ const Login = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   // 🔐 Normal Login (existing)
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setSuccess(false);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
+      const res = await apiFetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -32,12 +33,12 @@ const Login = () => {
       if (res.ok) {
         trackEvent("login", { method: "email" });
         setSuccess(true);
-        document.body.classList.add("fade-out");
+
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("token", data.token);
 
         setTimeout(() => {
-          navigate("/book");
+          navigate(sessionStorage.getItem("bookingReturn") || "/book");
         }, 1200);
       } else {
         setSuccess(false);
@@ -46,6 +47,7 @@ const Login = () => {
     } catch (err) {
       console.error("Login error:", err);
       setSuccess(false);
+      alert(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -56,13 +58,11 @@ const Login = () => {
   try {
     const user = await signInWithGoogle();
 
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google`, {
+    const res = await apiFetch(`${API_BASE_URL}/auth/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: user.displayName,
-        email: user.email,
-        profilePic: user.photoURL,
+        idToken: await user.getIdToken(),
       }),
     });
 
@@ -72,12 +72,12 @@ const Login = () => {
     }
 
     const data = await res.json();
-    console.log("Google login success:", data);
-    localStorage.setItem("user", JSON.stringify(data));
-    navigate("/book");
-  } catch (err: any) {
+    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("token", data.token);
+    navigate(sessionStorage.getItem("bookingReturn") || "/book");
+  } catch (err: unknown) {
     console.error("Google login failed:", err);
-    alert("Google login failed: " + err.message);
+    alert("Google login failed: " + (err instanceof Error ? err.message : "Please try again"));
   } finally {
     setGoogleLoading(false);
   }
@@ -107,7 +107,7 @@ const Login = () => {
           </h2>
           <p className="text-center text-gray-500 mb-6">Sign in to your account</p>
 
-          
+
           {/* Normal Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}

@@ -1,11 +1,16 @@
+import {dailyMetrics} from "../lib/metrics";
 import { TrendingUp, TrendingDown, Home, CheckCircle, Clock, Calendar, ArrowRight, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../../services/api";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
   type Booking = {
     _id: string;
+    pricePerNight?: number;
+    totalPrice?: number;
+    nights?: number;
+    roomId?: string;
     guest: string;
     firstName: string;
     lastName: string;
@@ -22,6 +27,7 @@ export default function Dashboard() {
     _id: string;
     name: string;
     price: number;
+    inventory?: number;
     category?: string;
   };
 
@@ -52,10 +58,11 @@ export default function Dashboard() {
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [occupancyChart, setOccupancyChart] = useState<ChartPoint[]>([]);
   const [revenueChart, setRevenueChart] = useState<ChartPoint[]>([]);
+  const [error,setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"occupancy" | "revenue">("occupancy");
 
-  const getToday = () => new Date().toISOString().split("T")[0];
+  const getToday = () => new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Colombo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 
   const timeAgo = (timestampMs: number) => {
     const diffMs = new Date().getTime() - timestampMs;
@@ -75,7 +82,7 @@ export default function Dashboard() {
       if (!id || id.length < 8) return new Date().getTime();
       const timestampHex = id.substring(0, 8);
       return parseInt(timestampHex, 16) * 1000;
-    } catch (e) {
+    } catch {
       return new Date().getTime();
     }
   };
@@ -84,19 +91,14 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const bookingsRes = await axios.get<Booking[]>(
-          `${import.meta.env.VITE_API_BASE_URL}/bookings`
-        );
-        const roomsRes = await axios.get<Room[]>(
-          `${import.meta.env.VITE_API_BASE_URL}/rooms`
-        );
-        const messagesRes = await axios.get<any>(
-          `${import.meta.env.VITE_API_BASE_URL}/messages`
-        );
+        const [bookingsRes, roomsRes, messagesRes] = await Promise.all([
+          axios.get<Booking[]>('/bookings'), axios.get<Room[]>('/rooms'),
+          axios.get<{data:Message[]}>('/messages'),
+        ]);
 
         const fetchedBookings = bookingsRes.data.map((b) => ({
           ...b,
-          status: b.status || "Confirmed",
+          status: b.status || "Pending",
         }));
         
         const fetchedRooms = roomsRes.data || [];
@@ -143,7 +145,7 @@ export default function Dashboard() {
         // Sort timeline items chronologically (latest first) and slice to top 4
         setTimeline(items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 4));
 
-        // --- Compute Real Occupancy & Revenue Charts (Past 7 Days) ---
+        // --- Compute Real Occupancy & Reserved value Charts (Past 7 Days) ---
         const past7Days: { dateStr: string; dayLabel: string }[] = [];
         const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         
@@ -151,46 +153,24 @@ export default function Dashboard() {
           const d = new Date();
           d.setDate(d.getDate() - i);
           past7Days.push({
-            dateStr: d.toISOString().split("T")[0],
+            dateStr: new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Colombo",year:"numeric",month:"2-digit",day:"2-digit"}).format(d),
             dayLabel: weekdayNames[d.getDay()]
           });
         }
 
-        const totalRoomsLimit = fetchedRooms.length || 20;
-
         const occupancyPoints: ChartPoint[] = [];
         const revenuePoints: ChartPoint[] = [];
-
         past7Days.forEach(({ dateStr, dayLabel }) => {
-          let occupiedRoomsCount = 0;
-          let dailyRevenueSum = 0;
-
-          fetchedBookings.forEach((b) => {
-            if (b.checkIn <= dateStr && b.checkOut > dateStr) {
-              occupiedRoomsCount++;
-
-              // Match room pricing
-              const matchedRoom = fetchedRooms.find(
-                (r) =>
-                  r.category?.toLowerCase() === b.roomType?.toLowerCase() ||
-                  r.name?.toLowerCase().includes(b.roomType?.toLowerCase() || "")
-              );
-              dailyRevenueSum += matchedRoom ? matchedRoom.price : 180; // Standard fallback $180
-            }
-          });
-
-          // Calculate occupancy rate (capped at 100%)
-          const rate = Math.min(Math.round((occupiedRoomsCount / totalRoomsLimit) * 100), 100);
-
-          occupancyPoints.push({ label: dayLabel, val: rate });
-          revenuePoints.push({ label: dayLabel, val: dailyRevenueSum });
+          const metrics=dailyMetrics(fetchedBookings,fetchedRooms,dateStr);
+          occupancyPoints.push({label:dayLabel,val:metrics.occupancy});
+          revenuePoints.push({label:dayLabel,val:metrics.value});
         });
 
         setOccupancyChart(occupancyPoints);
         setRevenueChart(revenuePoints);
 
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+      } catch {
+        setError("Dashboard data could not be loaded. Please refresh to retry.");
       } finally {
         setLoading(false);
       }
@@ -201,13 +181,14 @@ export default function Dashboard() {
 
   const today = getToday();
 
-  const arrivals = bookings.filter((b) => b.checkIn === today).length;
-  const departures = bookings.filter((b) => b.checkOut === today).length;
-  const stayovers = bookings.filter(
+  const activeBookings = bookings.filter(b=>!["Cancelled","Checked Out"].includes(b.status || ""));
+  const arrivals = activeBookings.filter((b) => b.checkIn === today && b.status!=="Cancelled").length;
+  const departures = activeBookings.filter((b) => b.checkOut === today && b.status!=="Cancelled").length;
+  const stayovers = activeBookings.filter(
     (b) => b.checkIn < today && b.checkOut > today
   ).length;
   
-  const totalRoomsLimit = rooms.length || 20;
+  const totalRoomsLimit = rooms.reduce((sum,r)=>sum+(r.inventory || 1),0);
   const freeRooms = totalRoomsLimit - (arrivals + stayovers);
 
   const todayStats = [
@@ -248,6 +229,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {error && <p role="alert" className="p-4 bg-red-50 text-red-700">{error}</p>}
       
       {/* Welcome Luxury Banner */}
       <div className="relative overflow-hidden bg-gradient-to-r from-luxury-blue-900 to-luxury-blue-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl border border-luxury-blue-800">
@@ -256,7 +238,7 @@ export default function Dashboard() {
 
         <div className="relative z-10 max-w-2xl">
           
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Calm rest Admin pannel</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Calm Rest Admin Dashboard</h1>
           
           <div className="flex flex-wrap gap-3">
             <button
@@ -317,7 +299,7 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
               <h3 className="text-base font-bold text-gray-800">Database Analytics Trends</h3>
-              <p className="text-gray-400 text-xs mt-0.5">Occupancy and income metrics derived from guest booking records</p>
+              <p className="text-gray-400 text-xs mt-0.5">Reserved occupancy and room value derived from guest booking records; includes pending reservations; excludes cancellations and unknown historical prices</p>
             </div>
             
             {/* Custom Tab Switcher */}
@@ -340,7 +322,7 @@ export default function Dashboard() {
                     : "text-gray-500 hover:text-gray-800"
                 }`}
               >
-                Revenue ($)
+                Reserved value ($)
               </button>
             </div>
           </div>
@@ -406,7 +388,7 @@ export default function Dashboard() {
 
           <div className="space-y-5 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-gray-100">
             {timeline.length > 0 ? (
-              timeline.map((item, idx) => {
+              timeline.map((item) => {
                 const colorMarker = item.type === "booking" ? "bg-emerald-500" : "bg-gold";
                 return (
                   <div key={item.id} className="flex items-start gap-4 relative">
@@ -444,9 +426,9 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-2.5">
-            {bookings.filter((b) => b.checkIn === today).length > 0 ? (
+            {activeBookings.filter((b) => b.checkIn === today && b.status!=="Cancelled").length > 0 ? (
               bookings
-                .filter((b) => b.checkIn === today)
+                .filter((b) => b.checkIn === today && b.status!=="Cancelled")
                 .slice(0, 4)
                 .map((booking) => (
                   <div
@@ -483,9 +465,9 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-2.5">
-            {bookings.filter((b) => b.checkOut === today).length > 0 ? (
+            {activeBookings.filter((b) => b.checkOut === today && b.status!=="Cancelled").length > 0 ? (
               bookings
-                .filter((b) => b.checkOut === today)
+                .filter((b) => b.checkOut === today && b.status!=="Cancelled")
                 .slice(0, 4)
                 .map((booking) => (
                   <div

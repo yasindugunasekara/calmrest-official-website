@@ -1,19 +1,14 @@
-import React, { useState } from 'react';
-import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Send } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+
+import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { useLanguage } from '../contexts/useLanguage';
 
 const Footer = () => {
-  const [email, setEmail] = useState('');
   const { t } = useLanguage();
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-  };
 
   return (
     <footer className="bg-navy text-white">
-  
+
 
       {/* Main Footer */}
       <div className="py-16">
@@ -23,7 +18,7 @@ const Footer = () => {
             <div className="flex items-center space-x-2 mb-6">
               <div className="w-12 h-12  rounded-full flex items-center justify-center">
                 <img
-                  src="https://res.cloudinary.com/dcgfwnzzr/image/upload/v1760970811/calmrest_logo_vbuoxu.png"
+                  src="https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1760970811/calmrest_logo_vbuoxu.png"
                   alt="Calm Rest logo"
                   className="w-10 h-10 object-contain rounded-full"
                   loading="lazy"

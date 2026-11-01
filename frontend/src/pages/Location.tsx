@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { MapPin, Plane, Car, Utensils, ShoppingBag, Camera, Clock, Phone, Mail, Waves, Bike } from 'lucide-react';
 import { trackEvent } from '../utils/analytics';
 
@@ -72,14 +72,14 @@ const Location = () => {
 
   return (
     <div className="min-h-screen bg-white relative">
-      
+
 
       {/* Hero Section */}
       <section className="relative h-96 flex items-center justify-center text-center text-white">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: 'url(https://res.cloudinary.com/dcgfwnzzr/image/upload/v1761979536/pexels-asadphoto-3155661_axko0o.jpg)'
+            backgroundImage: 'url(https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1761979536/pexels-asadphoto-3155661_axko0o.jpg)'
           }}
         />
         <div className="absolute inset-0 bg-navy bg-opacity-70" />
@@ -109,7 +109,7 @@ const Location = () => {
               <p>Ahangama</p>
               <p> Sri Lanka</p>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="flex items-center justify-center space-x-3">
                 <Phone className="w-5 h-5 text-gold" />
@@ -161,7 +161,7 @@ const Location = () => {
           <p className="text-lg text-gray-700 leading-relaxed mb-8">
             Calm Rest Hotel is strategically located in the prestigious downtown district, offering unparalleled access to the city's finest attractions, business centers, and cultural landmarks.
           </p>
-          
+
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
               <div className="bg-gold p-2 rounded-full mt-1">
@@ -203,7 +203,7 @@ const Location = () => {
             <h2 className="text-4xl font-bold mb-4 text-navy font-serif">Nearby Attractions</h2>
             <p className="text-lg text-gray-700">Discover the best of the city from our convenient location</p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {attractions.map((attraction, index) => (
               <div key={index} className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -234,7 +234,7 @@ const Location = () => {
             <h2 className="text-4xl font-bold mb-4 text-navy font-serif">Transportation Options</h2>
             <p className="text-lg text-gray-700">Multiple convenient ways to travel around the city</p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {transportOptions.map((option, index) => (
               <div key={index} className="text-center p-8 border border-gray-200 rounded-lg hover:shadow-lg transition-shadow duration-300">
@@ -260,7 +260,7 @@ const Location = () => {
             <h2 className="text-4xl font-bold mb-4 font-serif">Getting Here</h2>
             <p className="text-xl text-white/90">Detailed directions to reach Calm Rest Hotel</p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
               <div className="flex items-center space-x-3 mb-4">
@@ -288,7 +288,7 @@ const Location = () => {
               </ul>
             </div>
           </div>
-          
+
           <div className="text-center mt-12">
             <button className="bg-gold text-white px-8 py-3 rounded hover:bg-opacity-90 transition-all duration-300 font-medium">
               Get Detailed Directions

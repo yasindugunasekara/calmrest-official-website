@@ -1,5 +1,7 @@
+import {imageUrl} from "../lib/images";
+import { API_BASE_URL, apiFetch } from "../lib/api";
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Bath,
   Wifi,
@@ -34,6 +36,7 @@ type Feature = {
 };
 
 type Room = {
+  guests: number;
   _id: string;
   name: string;
   size: string;
@@ -113,6 +116,7 @@ const featureIconMap: Record<string, React.ReactNode> = {
 const RoomDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [params]=useSearchParams();
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -121,7 +125,7 @@ const RoomDetails: React.FC = () => {
   useEffect(() => {
     const fetchRoom = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms/${id}`);
+        const res = await apiFetch(`${API_BASE_URL}/rooms/${id}`);
         const data = await res.json();
         setRoom(data);
 
@@ -184,7 +188,7 @@ const RoomDetails: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50/50 pb-28 lg:pb-16 pt-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Navigation / Back Button */}
         <button
           onClick={() => navigate(-1)}
@@ -196,17 +200,17 @@ const RoomDetails: React.FC = () => {
 
         {/* Desktop Split Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
+
           {/* Left Column: Media & Room details (Span 2) */}
           <div className="lg:col-span-2 space-y-8 bg-white rounded-2xl border-0 md:border border-gray-100 p-6 md:p-8 shadow-sm">
-            
+
             {/* Gallery Section */}
             <div>
               <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden shadow-md group/gallery bg-gray-900">
                 {images[activeIndex] && !images[activeIndex].includes("placehold") && !images[activeIndex].includes("placeholder") ? (
                   <>
                     <img
-                      src={images[activeIndex]}
+                      src={imageUrl(images[activeIndex],1200)} decoding="async"
                       className="w-full h-full object-cover transition-all duration-700 select-none cursor-pointer"
                       alt={`${room.name} view`}
                       onClick={() => setIsFullscreen(true)}
@@ -229,7 +233,7 @@ const RoomDetails: React.FC = () => {
                     </span>
                   </div>
                 )}
-                
+
                 {/* Arrow Controls */}
                 {images.length > 1 && (
                   <>
@@ -237,13 +241,13 @@ const RoomDetails: React.FC = () => {
                       onClick={prevSlide}
                       className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-navy flex items-center justify-center shadow-md opacity-0 group-hover/gallery:opacity-100 transition-opacity duration-300"
                     >
-                      <ChevronLeft size={20} />
+                      <ChevronLeft size={20} aria-label="Previous photo" />
                     </button>
                     <button
                       onClick={nextSlide}
                       className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-navy flex items-center justify-center shadow-md opacity-0 group-hover/gallery:opacity-100 transition-opacity duration-300"
                     >
-                      <ChevronRight size={20} />
+                      <ChevronRight size={20} aria-label="Next photo" />
                     </button>
                   </>
                 )}
@@ -262,7 +266,7 @@ const RoomDetails: React.FC = () => {
                           : "border-transparent opacity-70 hover:opacity-100"
                       }`}
                     >
-                      <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={imageUrl(img,200)} loading="lazy" decoding="async" alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -365,18 +369,7 @@ const RoomDetails: React.FC = () => {
               <div>
                 <h4 className="font-bold text-green-900 text-sm sm:text-base">Free Cancellation Policies</h4>
                 <p className="text-green-800 text-xs sm:text-sm mt-1 leading-relaxed">
-                  Enjoy complete flexibility. Cancel for free until{" "}
-                  <span className="font-semibold">
-                    {new Date().toLocaleDateString("en-US", { day: "numeric", month: "long" })}
-                  </span>
-                  . After{" "}
-                  <span className="font-semibold">
-                    {new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </span>
-                  , cancellation will be non-refundable.
+                  Please contact Calm Rest to confirm the cancellation terms for your reservation before booking.
                 </p>
               </div>
             </div>
@@ -386,7 +379,7 @@ const RoomDetails: React.FC = () => {
           {/* Right Column: Sticky Pricing/Booking widget */}
           <div className="lg:col-span-1 lg:sticky lg:top-24 self-start">
             <div className="bg-white rounded-2xl border-0 md:border border-gray-100 shadow-lg p-6 md:p-8 space-y-6">
-              
+
               {/* Card Header Title */}
               <div className="border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-serif font-bold text-navy">Reserve Accommodation</h3>
@@ -420,7 +413,7 @@ const RoomDetails: React.FC = () => {
                 className="w-full bg-gold hover:bg-opacity-95 text-white py-4 rounded-xl transition-all duration-300 font-bold uppercase tracking-wider text-xs sm:text-sm shadow-md shadow-gold/25 hover:-translate-y-0.5 focus:outline-none"
                 onClick={() => {
                   trackEvent("cta_click", { button_name: "Room Details Book", room_name: room.name });
-                  navigate("/login");
+                  navigate(`/book?room=${room._id}&checkIn=${params.get("checkIn") || ""}&checkOut=${params.get("checkOut") || ""}`);
                 }}
               >
                 Book Your Stay
@@ -466,12 +459,12 @@ const RoomDetails: React.FC = () => {
             <span className="text-gray-500 text-xs ml-1">/ night</span>
           </div>
         </div>
-        
+
         <button
           className="bg-gold text-white px-8 py-3 rounded-xl hover:bg-opacity-95 font-bold text-sm shadow-md active:scale-95 transition-transform"
           onClick={() => {
             trackEvent("cta_click", { button_name: "Room Details Book Mobile", room_name: room.name });
-            navigate("/login");
+            navigate(`/book?room=${room._id}&checkIn=${params.get("checkIn") || ""}&checkOut=${params.get("checkOut") || ""}`);
           }}
         >
           Book Now
@@ -482,7 +475,7 @@ const RoomDetails: React.FC = () => {
       {isFullscreen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 p-4 animate-fade-in">
           <img
-            src={images[activeIndex]}
+            src={imageUrl(images[activeIndex],1200)} decoding="async"
             alt="Fullscreen Preview"
             className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
           />

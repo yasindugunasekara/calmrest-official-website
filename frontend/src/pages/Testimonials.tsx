@@ -1,3 +1,4 @@
+import { API_BASE_URL, apiFetch } from "../lib/api";
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
@@ -25,7 +26,7 @@ const Testimonials: React.FC = () => {
     const fetchTestimonials = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/testimonials/`);
+        const res = await apiFetch(`${API_BASE_URL}/testimonials/`);
         if (!res.ok) throw new Error('Failed to fetch testimonials');
         const data = await res.json();
         console.log('Fetched testimonials data:', data);
@@ -65,7 +66,7 @@ const Testimonials: React.FC = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "url(https://res.cloudinary.com/dcgfwnzzr/image/upload/v1761978975/DSC07870_ubapwv.png)",
+              "url(https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1761978975/DSC07870_ubapwv.png)",
           }}
         />
         <div className="absolute inset-0 bg-navy bg-opacity-70" />

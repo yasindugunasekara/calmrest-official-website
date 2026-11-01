@@ -1,3 +1,6 @@
+import type { Room } from "../types";
+import { imageUrl } from "../lib/images";
+import { API_BASE_URL, apiFetch } from "../lib/api";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -48,10 +51,15 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 const Rooms = () => {
-  const [rooms, setRooms] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<{id:string;name:string}[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const navigate = useNavigate();
+  const [checkIn,setCheckIn]=useState("");
+  const [checkOut,setCheckOut]=useState("");
+  const [feedback,setFeedback]=useState("");
+  const [loading,setLoading]=useState(true);
+  async function searchAvailability(e:React.FormEvent) {e.preventDefault();setLoading(true);setFeedback("");try{const response=await apiFetch(`${API_BASE_URL}/rooms?checkIn=${checkIn}&checkOut=${checkOut}`);setRooms(await response.json());}catch(error){setFeedback(error instanceof Error?error.message:"Unable to load availability");}finally{setLoading(false);}}
 
   // Section Tracking
   const filterRef = useSectionTracking('Room Categories Filter');
@@ -60,16 +68,16 @@ const Rooms = () => {
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("roomsScrollPosition");
     if (savedScroll) {
-      window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" as any });
+      window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
       sessionStorage.removeItem("roomsScrollPosition");
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     // ✅ Fetch rooms from backend API
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms`)
+    apiFetch(`${API_BASE_URL}/rooms`)
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: Room[]) => {
         setRooms(data);
 
         // Track GA4 Ecommerce View Item List
@@ -87,12 +95,13 @@ const Rooms = () => {
         ];
         setCategories(uniqueCategories);
       })
-      .catch((err) => console.error("Error fetching rooms:", err));
+      .catch((err) => setFeedback(err instanceof Error?err.message:"Unable to load rooms"))
+      .finally(()=>setLoading(false));
   }, []);
 
   const handleCardClick = (roomId: string) => {
     sessionStorage.setItem("roomsScrollPosition", window.scrollY.toString());
-    navigate(`/rooms/${roomId}`);
+    navigate(`/rooms/${roomId}${checkIn && checkOut ? `?checkIn=${checkIn}&checkOut=${checkOut}` : ""}`);
   };
 
   const handleCategorySelect = (categoryId: string, categoryName: string) => {
@@ -113,7 +122,7 @@ const Rooms = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "url(https://res.cloudinary.com/dcgfwnzzr/image/upload/v1767077294/DSC02258_yg85iy.jpg)",
+              "url(https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1767077294/DSC02258_yg85iy.jpg)",
           }}
         />
         <div className="absolute inset-0 bg-navy bg-opacity-70" />
@@ -127,8 +136,14 @@ const Rooms = () => {
         </div>
       </section>
 
+      <form onSubmit={searchAvailability} className="max-w-4xl mx-auto px-4 py-8 flex flex-wrap gap-4 items-end">
+        <label className="flex-1 min-w-40 text-sm font-semibold">Check-in<input aria-label="Check-in" className="block w-full border rounded-lg p-3 mt-2" type="date" value={checkIn} min={new Date().toLocaleDateString('en-CA')} required onChange={e=>setCheckIn(e.target.value)}/></label>
+        <label className="flex-1 min-w-40 text-sm font-semibold">Check-out<input aria-label="Check-out" className="block w-full border rounded-lg p-3 mt-2" type="date" value={checkOut} min={checkIn || new Date().toLocaleDateString('en-CA')} required onChange={e=>setCheckOut(e.target.value)}/></label>
+        <button disabled={loading} className="bg-navy text-white rounded-lg px-6 py-3">{loading?'Loading…':'Check availability'}</button>
+        {feedback && <p className="w-full text-red-700" role="alert">{feedback}</p>}
+      </form>
       {/* Filter Tabs */}
-      <section ref={filterRef as any} className="py-8">
+      <section ref={filterRef} className="py-8">
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-2">
           {categories.map((category) => (
             <button
@@ -149,8 +164,9 @@ const Rooms = () => {
         </div>
       </section>
 
+      {!loading && !rooms.length && <p className="p-8 text-center" role="status">No rooms are available to display. Please contact the hotel.</p>}
       {/* Rooms Grid */}
-      <section ref={roomGridRef as any} className="py-16">
+      <section ref={roomGridRef} className="py-16">
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredRooms.map((room) => (
             <div
@@ -158,16 +174,20 @@ const Rooms = () => {
               onClick={() => handleCardClick(room._id)}
               className="snap-start scroll-mt-24 bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-2xl hover:border-gold/30 border border-transparent cursor-pointer transition-all duration-500 flex flex-col justify-between"
             >
+              {room.available !== undefined && <p className="px-4 pt-4 font-semibold text-sm">{room.available ? `${room.available} available for your dates` : "Sold out for your dates"}</p>}
               {/* Room Card Image */}
               <div className="relative overflow-hidden">
                 {((room.images && room.images.length > 0 && !room.images[0].includes("placehold") && !room.images[0].includes("placeholder")) || (room.image && !room.image.includes("placehold") && !room.image.includes("placeholder"))) ? (
                   <img
-                    src={room.images && room.images.length > 0 ? room.images[0] : room.image}
+                    src={imageUrl(room.images?.[0] || room.image, 640)}
+                        srcSet={`${imageUrl(room.images?.[0] || room.image, 400)} 400w, ${imageUrl(room.images?.[0] || room.image, 640)} 640w, ${imageUrl(room.images?.[0] || room.image, 960)} 960w`}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        loading="lazy" decoding="async" width={640} height={640}
                     alt={room.name}
-                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-700"
+                    className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 ) : (
-                  <div className="w-full h-64 bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700">
+                  <div className="w-full aspect-square bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
                     <span className="text-3xl font-serif font-bold text-[#45392e] tracking-wide select-none text-center px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]">
@@ -261,7 +281,7 @@ const Rooms = () => {
                   >
                     Book Now
                   </button>
-                  <button 
+                  <button
                     className="px-5 py-2.5 border border-gold text-gold rounded hover:bg-gold hover:text-white transition-all duration-300 text-xs font-semibold uppercase tracking-wider"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -282,4 +302,3 @@ const Rooms = () => {
 };
 
 export default Rooms;
-

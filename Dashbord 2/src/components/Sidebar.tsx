@@ -1,3 +1,4 @@
+import api from "../../services/api";
 import { LayoutDashboard, Calendar, MessageSquare, DoorOpen, Users, Settings, X, Home, User, LogOut } from 'lucide-react';
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -20,7 +21,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {await api.post("/auth/logout");} catch {/* Clear local session even if the server is unavailable. */}
+    localStorage.removeItem("user");
     localStorage.removeItem("token");
     navigate("/login", { replace: true });
   };

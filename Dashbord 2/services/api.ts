@@ -1,68 +1,27 @@
-import axios from "axios";
-
-// 1. Configure the custom axios instance (used in Login and adminRegister)
-const api = axios.create({
-  baseURL:
-    (import.meta.env.VITE_API_BASE_URL as string) ||
-    "http://localhost:5000/api",
+import axios from 'axios';
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+const api = axios.create({ baseURL: API_BASE_URL, timeout: 20000 });
+api.interceptors.request.use(config => {
+ const target = new URL(api.getUri(config), location.origin);
+ const base = new URL(API_BASE_URL + '/', location.origin);
+ if (target.origin === base.origin && target.pathname.startsWith(base.pathname)) {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+ }
+ return config;
 });
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+api.interceptors.response.use(response => response, error => {
+ if (error.response?.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); if (location.pathname !== '/login') location.replace('/login'); }
+ return Promise.reject(error);
 });
-
-// 2. Configure the global axios instance interceptor (for legacy raw axios usages in dashboard components)
-axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers = config.headers || {};
-    if (typeof config.headers.set === 'function') {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    } else {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
-
-// 3. Patch window.fetch globally (for legacy raw fetch usages in dashboard components)
-if (typeof window !== "undefined") {
-  const originalFetch = window.fetch;
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const fetchInit = { ...init };
-      if (!fetchInit.headers) {
-        fetchInit.headers = {};
-      }
-
-      if (fetchInit.headers instanceof Headers) {
-        if (!fetchInit.headers.has("Authorization")) {
-          fetchInit.headers.set("Authorization", `Bearer ${token}`);
-        }
-      } else if (Array.isArray(fetchInit.headers)) {
-        const hasAuth = fetchInit.headers.some(
-          ([key]) => key.toLowerCase() === "authorization"
-        );
-        if (!hasAuth) {
-          fetchInit.headers.push(["Authorization", `Bearer ${token}`]);
-        }
-      } else {
-        const hasAuth = Object.keys(fetchInit.headers).some(
-          (key) => key.toLowerCase() === "authorization"
-        );
-        if (!hasAuth) {
-          (fetchInit.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-        }
-      }
-      return originalFetch(input, fetchInit);
-    }
-    return originalFetch(input, init);
-  };
+export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+ const target = new URL(input instanceof Request ? input.url : String(input), location.origin);
+ const base = new URL(API_BASE_URL + '/', location.origin);
+ const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
+ const token = localStorage.getItem('token');
+ if (token && target.origin === base.origin && target.pathname.startsWith(base.pathname)) headers.set('Authorization', `Bearer ${token}`);
+ const response = await fetch(input, { ...init, headers, signal: init?.signal || AbortSignal.timeout(20000) });
+ if (response.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); if (location.pathname !== '/login') location.replace('/login'); }
+ return response;
 }
-
 export default api;

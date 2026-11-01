@@ -1,45 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const Testimonial = require('../models/Testimonial');
-
-// GET all testimonials
-router.get('/', async (req, res) => {
-  try {
-    const testimonials = await Testimonial.find().sort({ createdAt: -1 });
-    // Always return an array
-    res.json(Array.isArray(testimonials) ? testimonials : []);
-  } catch (err) {
-    console.error(err);
-    // Return empty array on error
-    res.status(500).json([]);
-  }
+const router=require('express').Router();
+const Testimonial=require('../models/Testimonial');
+const v=require('../lib/validation');
+router.get('/',async(req,res)=>res.json(await Testimonial.find().sort({createdAt:-1}).limit(100).lean()));
+router.post('/',async(req,res)=>{
+ const data={};for(const [key,max] of Object.entries({name:160,country:80,reviewTitle:160,review:3000,roomType:120,stayDuration:80})) data[key]=v.text(req.body[key],key,max);
+ data.rating=v.number(req.body.rating,'Rating',1,5,true);
+ res.status(201).json(await Testimonial.create(data));
 });
-
-// POST a new testimonial
-router.post('/', async (req, res) => {
-  try {
-    const { name, country, rating, reviewTitle, review, roomType, stayDuration } = req.body;
-
-    if (!name || !country || !rating || !review || !roomType || !stayDuration) {
-      return res.status(400).json({ message: 'All required fields must be provided' });
-    }
-
-    const newTestimonial = new Testimonial({
-      name,
-      country,
-      rating,
-      reviewTitle,
-      review,
-      roomType,
-      stayDuration,
-    });
-
-    const saved = await newTestimonial.save();
-    res.status(201).json(saved);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error saving testimonial' });
-  }
-});
-
-module.exports = router;
+module.exports=router;

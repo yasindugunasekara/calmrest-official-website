@@ -1,8 +1,8 @@
-import React, { useState ,useEffect} from 'react';
+import { useEffect} from 'react';
 import { Utensils, Waves, Dumbbell, Car, Calendar, Users, Sparkles, Wine, Music, Heart } from 'lucide-react';
 
 const Services = () => {
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+
 
  // Scroll to top on page load
   useEffect(() => {
@@ -131,14 +131,14 @@ const Services = () => {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="relative h-96 flex items-center justify-center text-center text-white">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: 'url(https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)'
           }}
         />
         <div className="absolute inset-0 bg-navy bg-opacity-70" />
-        
+
         <div className="relative z-10 max-w-4xl mx-auto px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4 font-serif">
             Services & Packages
@@ -158,7 +158,7 @@ const Services = () => {
               World-class amenities and services designed for your comfort and enjoyment
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {services.map((service, index) => (
               <div key={index} className="text-center group hover:transform hover:scale-105 transition-all duration-300">
@@ -194,7 +194,7 @@ const Services = () => {
               Carefully crafted packages for memorable occasions and experiences
             </p>
           </div>
-          
+
           <div className="grid lg:grid-cols-2 gap-8">
             {packages.map((pkg) => (
               <div key={pkg.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -212,10 +212,10 @@ const Services = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-8">
                   <p className="text-gray-700 mb-6">{pkg.description}</p>
-                  
+
                   <div className="mb-6">
                     <h4 className="font-semibold text-navy mb-3">Package Includes:</h4>
                     <div className="grid grid-cols-2 gap-2">
@@ -227,7 +227,7 @@ const Services = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="border-t pt-6">
                     <h4 className="font-semibold text-navy mb-4">Pricing Options:</h4>
                     <div className="space-y-3">
@@ -242,7 +242,7 @@ const Services = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   <button className="w-full bg-gold text-white py-3 px-6 rounded-full hover:bg-opacity-90 transition-all duration-300 font-medium mt-6">
                     Book This Package
                   </button>
@@ -260,7 +260,7 @@ const Services = () => {
             <h2 className="text-4xl font-bold mb-4 text-navy font-serif">Additional Services</h2>
             <p className="text-lg text-gray-700">Enhance your stay with our premium add-on services</p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center p-6 border border-gray-200 rounded-lg hover:shadow-lg transition-shadow duration-300">
               <Calendar className="w-12 h-12 text-gold mx-auto mb-4" />
@@ -268,14 +268,14 @@ const Services = () => {
               <p className="text-gray-600 mb-4">Professional event coordination for any occasion</p>
               <p className="text-gold font-bold">Starting at $299</p>
             </div>
-            
+
             <div className="text-center p-6 border border-gray-200 rounded-lg hover:shadow-lg transition-shadow duration-300">
               <Car className="w-12 h-12 text-gold mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-3 text-navy">Airport Transfer</h3>
               <p className="text-gray-600 mb-4">Luxury transportation to and from the airport</p>
               <p className="text-gold font-bold">Starting at $89</p>
             </div>
-            
+
             <div className="text-center p-6 border border-gray-200 rounded-lg hover:shadow-lg transition-shadow duration-300">
               <Music className="w-12 h-12 text-gold mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-3 text-navy">Entertainment</h3>

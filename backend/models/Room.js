@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 
 const roomSchema = new mongoose.Schema({
-  name: { type: String, required: true }, // Room name
+  inventory: { type: Number, min: 1, max: 1000, default: 1 },
+  bookingVersion: { type: Number, default: 0 },
+  name: { type: String, required: true, trim: true, maxLength: 120 }, // Room name
   category: { type: String }, // e.g. Air Conditioned
   images: [{ type: String }], // Array of image URLs
   price: { type: Number, required: true }, // Price per night

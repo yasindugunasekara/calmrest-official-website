@@ -1,0 +1,1 @@
+export interface Room { _id:string; name:string; category:string; images:string[]; image:string; price:number; rating:number; description:string; bed:string; guests:number; size:string; amenities:string[]; features:{name:string;icon:string}[]; inventory?:number; available?:number }

@@ -1,3 +1,6 @@
+import type { Room } from "../types";
+import { imageUrl } from "../lib/images";
+import { API_BASE_URL, apiFetch } from "../lib/api";
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -21,7 +24,7 @@ import {
   Phone,
   Sparkles
 } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/useLanguage';
 import { useSectionTracking } from '../hooks/useSectionTracking';
 import { trackEvent } from '../utils/analytics';
 
@@ -52,7 +55,7 @@ const iconMap: Record<string, React.ReactNode> = {
 const Home = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Section Tracking
@@ -65,7 +68,7 @@ const Home = () => {
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("homeScrollPosition");
     if (savedScroll) {
-      window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" as any });
+      window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
       sessionStorage.removeItem("homeScrollPosition");
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -75,7 +78,7 @@ const Home = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms/`);
+        const response = await apiFetch(`${API_BASE_URL}/rooms/`);
         const data = await response.json();
         setRooms(data);
       } catch (error) {
@@ -104,12 +107,12 @@ const Home = () => {
   return (
     <div className="min-h-screen w-full overflow-hidden">
       {/* 🌅 Hero Section */}
-      <section ref={heroRef as any} className="relative min-h-[90vh] flex flex-col items-center justify-center text-center text-white px-6 md:px-10">
+      <section ref={heroRef} className="relative min-h-[90vh] flex flex-col items-center justify-center text-center text-white px-6 md:px-10">
         <div
           className="absolute inset-0 bg-cover bg-center bg-fixed"
           style={{
             backgroundImage:
-              "url(https://res.cloudinary.com/dcgfwnzzr/image/upload/v1761921975/Rooms/pic1_twzesv.jpg)",
+              "url(https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1761921975/Rooms/pic1_twzesv.jpg)",
           }}
         />
         <div className="absolute inset-0 bg-navy bg-opacity-70" />
@@ -143,7 +146,7 @@ const Home = () => {
         </div>
       </section>
       {/* 🏨 About Section */}
-      <section ref={aboutRef as any} className="py-16 md:py-20 bg-white">
+      <section ref={aboutRef} className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
@@ -184,7 +187,7 @@ const Home = () => {
 
             <div className="relative">
               <img
-                src="https://res.cloudinary.com/dcgfwnzzr/image/upload/v1767077294/DSC02255_kj4kat.jpg"
+                src="https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1767077294/DSC02255_kj4kat.jpg"
                 alt="Hotel Interior"
                 className="rounded-lg shadow-lg w-full object-cover"
               />
@@ -193,7 +196,7 @@ const Home = () => {
         </div>
       </section>
       {/* ✅ Updated Featured Rooms Section (Fetch from MongoDB) */}{" "}
-      <section ref={featuredRef as any} className="py-20 bg-cream">
+      <section ref={featuredRef} className="py-20 bg-cream">
         {" "}
         <div className="max-w-7xl mx-auto px-4">
           {" "}
@@ -224,12 +227,15 @@ const Home = () => {
                   <div className="relative overflow-hidden">
                     {((room.images && room.images.length > 0 && !room.images[0].includes("placehold") && !room.images[0].includes("placeholder")) || (room.image && !room.image.includes("placehold") && !room.image.includes("placeholder"))) ? (
                       <img
-                        src={room.images && room.images.length > 0 ? room.images[0] : room.image}
+                        src={imageUrl(room.images?.[0] || room.image, 640)}
+                        srcSet={`${imageUrl(room.images?.[0] || room.image, 400)} 400w, ${imageUrl(room.images?.[0] || room.image, 640)} 640w, ${imageUrl(room.images?.[0] || room.image, 960)} 960w`}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        loading="lazy" decoding="async" width={640} height={640}
                         alt={room.name}
-                        className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-700"
+                        className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                     ) : (
-                      <div className="w-full h-64 bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700">
+                      <div className="w-full aspect-square bg-gradient-to-b from-[#efe6dc] via-[#dcd0c0] to-[#bcaea0] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700">
                         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
                         <span className="text-3xl font-serif font-bold text-[#45392e] tracking-wide select-none text-center px-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]">
@@ -304,7 +310,7 @@ const Home = () => {
                       >
                         Book Now
                       </button>
-                      <button 
+                      <button
                         className="px-5 py-2 border border-gold text-gold rounded hover:bg-gold hover:text-white transition-all duration-300 text-xs font-semibold uppercase tracking-wider"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -339,7 +345,7 @@ const Home = () => {
         </div>{" "}
       </section>
       {/* 💼 Services */}
-      <section ref={servicesRef as any} className="py-16 md:py-20 bg-white">
+      <section ref={servicesRef} className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-navy font-serif">
             {t("ourServices")}
@@ -370,7 +376,7 @@ const Home = () => {
         </div>
       </section>
       {/* 💬 Testimonials */}
-      <section ref={testimonialsRef as any} className="py-16 md:py-20 bg-gold text-white">
+      <section ref={testimonialsRef} className="py-16 md:py-20 bg-gold text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 font-serif">
             What Our Guests Say
@@ -425,4 +431,3 @@ const Home = () => {
 };
 
 export default Home;
-

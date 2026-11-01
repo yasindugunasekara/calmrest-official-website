@@ -1,3 +1,4 @@
+import {errorMessage} from "../../services/errors";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,19 +30,17 @@ export default function Login() {
         password,
       });
 
+      if (res.data.user?.role !== "admin") { setError("An administrator account is required."); return; }
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       
       // Redirect with minor delay for smooth transition
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
       }, 300);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Invalid email or password. Please try again.");
-      }
+      setError(errorMessage(err, 'Unable to sign in or register. Please check your details.'));
     } finally {
       setIsLoading(false);
     }

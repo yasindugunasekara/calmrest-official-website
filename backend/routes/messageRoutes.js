@@ -1,49 +1,13 @@
-const express = require("express");
-const Message = require("../models/Message");
-
-const router = express.Router();
-
-const authMiddleware = require("../middleware/authMiddleware");
-const adminMiddleware = require("../middleware/adminMiddleware");
-
-// POST - Create new message
-router.post("/", async (req, res) => {
-  try {
-    const { fullName, email, phone, message } = req.body;
-
-    if (!fullName || !email || !message) {
-      return res.status(400).json({ success: false, error: "Required fields missing" });
-    }
-
-    const newMessage = new Message({ fullName, email, phone, message });
-    await newMessage.save();
-
-    res.status(201).json({ success: true, data: newMessage });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+const router=require('express').Router();
+const Message=require('../models/Message');
+const auth=require('../middleware/authMiddleware'),admin=require('../middleware/adminMiddleware'),v=require('../lib/validation');
+const {messageEmail,deliverPending}=require('../config/mailer');
+router.post('/',async(req,res)=>{
+ const data={fullName:v.text(req.body.fullName,'Name',160),email:v.email(req.body.email),phone:v.text(req.body.phone,'Phone',40,false),message:v.text(req.body.message,'Message',5000)};
+ const message=await Message.create(data);await messageEmail(message);await deliverPending();
+ res.status(201).json({success:true});
 });
-
-// GET - Fetch all messages
-router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const messages = await Message.find().sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: messages });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const deletedMessage = await Message.findByIdAndDelete(req.params.id);
-    if (!deletedMessage) {
-      return res.status(404).json({ success: false, error: "Message not found" });
-    }
-    res.json({ success: true, message: "Message deleted successfully ✅" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-module.exports = router;
+router.get('/',auth,admin,async(req,res)=>res.json({success:true,data:await Message.find().sort({createdAt:-1}).lean()}));
+router.patch('/:id',auth,admin,async(req,res)=>{if(typeof req.body.isRead!=='boolean') v.fail('isRead must be a boolean');const message=await Message.findByIdAndUpdate(v.id(req.params.id),{$set:{isRead:req.body.isRead}},{new:true,runValidators:true});if(!message) v.fail('Message not found',404);res.json({success:true,data:message});});
+router.delete('/:id',auth,admin,async(req,res)=>{if(!await Message.findByIdAndDelete(v.id(req.params.id))) v.fail('Message not found',404);res.json({success:true});});
+module.exports=router;

@@ -1,3 +1,4 @@
+import {errorMessage} from "../../services/errors";
 import React, { useState } from "react";
 import { User, ShieldAlert, Globe, Mail, Lock, UserCheck, ArrowLeft, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,7 +56,7 @@ const AdminRegister: React.FC = () => {
       setError("");
       setSuccess(false);
 
-      const res = await api.post("/users", {
+      const res = await api.post("/users/admin", {
         firstName: form.firstName,
         lastName: form.lastName,
         country: form.country,
@@ -82,13 +83,9 @@ const AdminRegister: React.FC = () => {
       } else {
         setError("Registration failed. Check inputs.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error:", err);
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
-      } else {
-        setError("Unable to connect to service. Try again later.");
-      }
+      setError(errorMessage(err, 'Unable to sign in or register. Please check your details.'));
     } finally {
       setLoading(false);
     }

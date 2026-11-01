@@ -31,14 +31,11 @@ export const useSectionTracking = (sectionName: string) => {
       }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
+    const element=sectionRef.current;
+    if (element) observer.observe(element);
 
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
+      observer.disconnect();
     };
   }, [sectionName, location.pathname]);
 

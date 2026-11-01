@@ -1,140 +1,36 @@
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-
-const router = express.Router();
-
-// 🟢 Normal Email/Password Login
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Find user
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(400).json({
-        error: "Invalid email or password",
-      });
-    }
-
-    // Prevent Google users from using password login
-    if (user.provider === "google") {
-      return res.status(400).json({
-        error: "Please login with Google",
-      });
-    }
-
-    // Compare password
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
-
-    if (!isMatch) {
-      return res.status(400).json({
-        error: "Invalid email or password",
-      });
-    }
-
-    // Generate JWT
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET || "default_jwt_secret_fallback_key_12345",
-      {
-        expiresIn: process.env.JWT_EXPIRE || "7d",
-      }
-    );
-
-    // Success
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        provider: user.provider,
-      },
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: err.message,
-    });
-  }
+const router=require('express').Router();
+const bcrypt=require('bcryptjs');
+const User=require('../models/User');
+const v=require('../lib/validation');
+const {session,publicUser}=require('../lib/session');
+const auth=require('../middleware/authMiddleware');
+router.post('/login',async(req,res)=>{
+ const email=v.email(req.body.email);
+ if(typeof req.body.password!=='string' || Buffer.byteLength(req.body.password)>72) v.fail('Invalid email or password',401);
+ const user=await User.findOne({email}).select('+password');
+ const valid=user?.password && await bcrypt.compare(req.body.password,user.password);
+ if(!valid) v.fail('Invalid email or password',401);
+ res.json(session(user));
 });
-
-// 🟣 Google Login
-router.post("/google", async (req, res) => {
-  try {
-    const {
-      firstName,
-      lastName,
-      email,
-      provider,
-    } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        error: "Email is required",
-      });
-    }
-
-    let user = await User.findOne({ email });
-
-    // Create user if not exists
-    if (!user) {
-      user = new User({
-        firstName: firstName || "",
-        lastName: lastName || "",
-        email,
-        provider: provider || "google",
-        role: "user",
-      });
-
-      await user.save();
-    }
-
-    // Generate JWT
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET || "default_jwt_secret_fallback_key_12345",
-      {
-        expiresIn: process.env.JWT_EXPIRE || "7d",
-      }
-    );
-
-    res.status(200).json({
-      message: "Google login successful",
-      token,
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        provider: user.provider,
-      },
-    });
-  } catch (err) {
-    console.error("Google login error:", err);
-
-    res.status(500).json({
-      error: "Server error during Google login",
-    });
-  }
+router.post('/google',async(req,res)=>{
+ const token=v.text(req.body.idToken,'Google ID token',10000);
+ if(!process.env.FIREBASE_PROJECT_ID) v.fail('Google sign-in is not configured',503);
+ let identity;
+ try {
+  const {jwtVerify,createRemoteJWKSet}=await import('jose');
+  router.googleKeys ||= createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'));
+  const {payload}=await jwtVerify(token,router.googleKeys,{algorithms:['RS256'],issuer:`https://securetoken.google.com/${process.env.FIREBASE_PROJECT_ID}`,audience:process.env.FIREBASE_PROJECT_ID});
+  if(!payload.sub || typeof payload.sub!=='string' || payload.sub.length>128 || typeof payload.auth_time!=='number' || payload.auth_time>Date.now()/1000) throw new Error('Invalid subject');
+  identity={...payload,uid:payload.sub};
+ } catch { v.fail('Google identity could not be verified',401); }
+ if(!identity.email_verified || identity.firebase?.sign_in_provider!=='google.com') v.fail('A verified Google account is required',401);
+ const email=v.email(identity.email);
+ let user=await User.findOne({email});
+ // Never implicitly link an existing local/admin account using a different provider.
+ if(user && (user.provider!=='google' || (user.googleUid && user.googleUid!==identity.uid))) v.fail('Please use your original sign-in method',409);
+ if(!user) { const [firstName,...rest]=(identity.name || 'Guest').split(' '); user=await User.create({firstName,lastName:rest.join(' '),email,provider:'google',googleUid:identity.uid,role:'user'}); }
+ res.json(session(user));
 });
-
-module.exports = router;
+router.get('/me',auth,(req,res)=>res.json({user:publicUser(req.account)}));
+router.post('/logout',auth,async(req,res)=>{ await User.updateOne({_id:req.user.id},{$inc:{tokenVersion:1}});res.json({success:true}); });
+module.exports=router;

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { User, Shield, Globe, Mail, Trash2, ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "../../services/api";
+import { Shield, Globe, Mail, Trash2, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface UserProfile {
@@ -24,8 +24,8 @@ export default function UsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/`);
-        const adminUsers = response.data.filter((user: any) => user.role === "admin");
+        const response = await axios.get<UserProfile[]>(`${(import.meta.env.VITE_API_BASE_URL || "/api")}/users/`);
+        const adminUsers = response.data;
         setUsers(adminUsers);
       } catch (err) {
         console.error("Error fetching users:", err);
@@ -49,7 +49,7 @@ export default function UsersPage() {
     if (!selectedUser) return;
 
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/users/${selectedUser._id}`);
+      await axios.delete(`${(import.meta.env.VITE_API_BASE_URL || "/api")}/users/${selectedUser._id}`);
       setUsers(prev => prev.filter(user => user._id !== selectedUser._id));
       setShowDeleteModal(false);
       setSelectedUser(null);

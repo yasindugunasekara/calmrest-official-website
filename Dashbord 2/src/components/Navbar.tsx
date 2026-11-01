@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Bell, User, Calendar, CheckCircle, MessageSquare, AlertCircle, LogOut } from 'lucide-react';
+import api from "../../services/api";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
+import { apiFetch } from "../../services/api";
+import { useState, useEffect, useRef } from 'react';
+import { Menu, Search, Bell, Calendar, CheckCircle, MessageSquare, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+
+interface BookingNotice {_id:string;firstName:string;lastName:string;roomType:string;}
+interface MessageNotice {_id:string;fullName:string;subject?:string;createdAt?:string;isRead?:boolean;}
 
 interface NavbarProps {
   setSidebarOpen: (open: boolean) => void;
@@ -13,7 +19,7 @@ interface Notification {
   title: string;
   time: string;
   isRead: boolean;
-  icon: any;
+  icon: typeof Calendar;
   color: string;
 }
 
@@ -24,14 +30,14 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;
+
 
   // Time conversion helpers
   const getTimestampFromId = (id: string) => {
     try {
       if (!id || id.length < 8) return 0;
       return parseInt(id.substring(0, 8), 16) * 1000;
-    } catch (e) {
+    } catch {
       return 0;
     }
   };
@@ -50,7 +56,7 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
       if (hours < 24) return `${hours}h ago`;
       const days = Math.floor(hours / 24);
       return `${days}d ago`;
-    } catch (e) {
+    } catch {
       return "Recently";
     }
   };
@@ -73,11 +79,11 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const bookingsRes = await fetch(`${API_BASE_URL}/bookings`);
-        const messagesRes = await fetch(`${API_BASE_URL}/messages`);
+        const bookingsRes = await apiFetch(`${API_BASE_URL}/bookings`);
+        const messagesRes = await apiFetch(`${API_BASE_URL}/messages`);
         
-        let bookingsList: any[] = [];
-        let messagesList: any[] = [];
+        let bookingsList: BookingNotice[] = [];
+        let messagesList: MessageNotice[] = [];
 
         if (bookingsRes.ok) {
           const bookingsData = await bookingsRes.json();
@@ -92,15 +98,15 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
         const derivedNotifications: Notification[] = [];
 
         // Sort arrays descending by creation time
-        const sortedBookings = [...bookingsList].sort((a: any, b: any) => getTimestampFromId(b._id) - getTimestampFromId(a._id));
-        const sortedMessages = [...messagesList].sort((a: any, b: any) => {
+        const sortedBookings = [...bookingsList].sort((a, b) => getTimestampFromId(b._id) - getTimestampFromId(a._id));
+        const sortedMessages = [...messagesList].sort((a, b) => {
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : getTimestampFromId(a._id);
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : getTimestampFromId(b._id);
           return timeB - timeA;
         });
 
         // Add bookings as notifications (up to 3 recent bookings)
-        sortedBookings.slice(0, 3).forEach((b: any) => {
+        sortedBookings.slice(0, 3).forEach((b) => {
           derivedNotifications.push({
             id: `b-${b._id}`,
             type: 'booking',
@@ -113,7 +119,7 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
         });
 
         // Add messages as notifications (up to 3 recent messages)
-        sortedMessages.slice(0, 3).forEach((m: any) => {
+        sortedMessages.slice(0, 3).forEach((m) => {
           derivedNotifications.push({
             id: `m-${m._id}`,
             type: 'message',
@@ -136,7 +142,9 @@ export default function Navbar({ setSidebarOpen }: NavbarProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {await api.post("/auth/logout");} catch {/* Clear local session even if the server is unavailable. */}
+    localStorage.removeItem("user");
     localStorage.removeItem("token");
     navigate("/login", { replace: true });
   };

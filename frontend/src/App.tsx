@@ -1,21 +1,22 @@
-import React, { useEffect } from "react"; 
+import { lazy, Suspense } from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
-import Home from "./pages/Home";
-import Rooms from "./pages/Rooms";
-import About from "./pages/About";
-import Location from "./pages/Location";
-import Testimonials from "./pages/Testimonials";
-import WriteReview from "./pages/WriteReview";
-import Contact from "./pages/Contact";
-import Profile from "./pages/Profile";
-import BookingPage from "./pages/BookingPage";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import RoomDetails from "./pages/RoomDetails";
-import NotFound from "./pages/NotFound"; // 404 Page
+const Home = lazy(() => import("./pages/Home"));
+const Rooms = lazy(() => import("./pages/Rooms"));
+const About = lazy(() => import("./pages/About"));
+const Location = lazy(() => import("./pages/Location"));
+const Testimonials = lazy(() => import("./pages/Testimonials"));
+const WriteReview = lazy(() => import("./pages/WriteReview"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Profile = lazy(() => import("./pages/Profile"));
+const BookingPage = lazy(() => import("./pages/BookingPage"));
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const RoomDetails = lazy(() => import("./pages/RoomDetails"));
+const NotFound = lazy(() => import("./pages/NotFound")); // 404 Page
 import { LanguageProvider } from "./contexts/LanguageContext";
 import ReactGA from "react-ga4";
 
@@ -27,7 +28,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     ReactGA.send({ hitType: "pageview", page: location.pathname });
-  }, [location.pathname]); 
+  }, [location.pathname]);
 
   // Hide Navbar/Footer on specific routes (case-insensitive)
   const path = location.pathname.toLowerCase();
@@ -36,7 +37,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     path === "/register" ||
     path === "/404" ||
     path === "/book" ||
-    path.startsWith("/rooms/"); 
+    path.startsWith("/rooms/");
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -52,7 +53,7 @@ function App() {
     <LanguageProvider>
       <Router>
         <LayoutWrapper>
-          <Routes>
+          <Suspense fallback={<p className="p-8 text-center" role="status">Loading…</p>}><Routes>
             {/* Main Pages */}
             <Route path="/" element={<Home />} />
             <Route path="/rooms" element={<Rooms />} />
@@ -74,7 +75,7 @@ function App() {
             {/* 404 Page */}
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
+          </Routes></Suspense>
         </LayoutWrapper>
       </Router>
     </LanguageProvider>

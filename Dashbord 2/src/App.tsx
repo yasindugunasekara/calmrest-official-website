@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -9,15 +10,15 @@ import {
 import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
 
-import Dashboard from "./components/Dashboard";
-import Bookings from "./components/Bookings";
-import Messages from "./components/Messages";
-import Rooms from "./components/Rooms";
-import UsersPage from "./components/UsersPage";
-import SettingsPage from "./components/SettingsPage";
+const Dashboard = lazy(() => import("./components/Dashboard"));
+const Bookings = lazy(() => import("./components/Bookings"));
+const Messages = lazy(() => import("./components/Messages"));
+const Rooms = lazy(() => import("./components/Rooms"));
+const UsersPage = lazy(() => import("./components/UsersPage"));
+const SettingsPage = lazy(() => import("./components/SettingsPage"));
 
-import AdminRegister from "./components/adminRegister";
-import Login from "./components/Login";
+const AdminRegister = lazy(() => import("./components/adminRegister"));
+const Login = lazy(() => import("./components/Login"));
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // ===============================
@@ -56,7 +57,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <Router>
-      <Routes>
+      <Suspense fallback={<p className="p-8 text-center" role="status">Loading…</p>}><Routes>
         {/* Default Route */}
 
         <Route
@@ -171,7 +172,7 @@ function App() {
             <div className="p-10 text-center text-2xl">404 Not Found</div>
           }
         />
-      </Routes>
+      </Routes></Suspense>
     </Router>
   );
 }

@@ -1,10 +1,11 @@
+import { API_BASE_URL, apiFetch } from "../lib/api";
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { categories } from "../data/roomsData";
 import { trackEvent } from "../utils/analytics";
 
 const WriteReview = () => {
-  const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [country, setCountry] = useState("");
   const [review, setReview] = useState("");
@@ -55,7 +56,7 @@ const WriteReview = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/testimonials/`, {
+      const res = await apiFetch(`${API_BASE_URL}/testimonials/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

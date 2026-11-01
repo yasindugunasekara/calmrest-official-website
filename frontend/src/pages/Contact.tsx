@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import React, { useState, useEffect } from "react";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 import axios from "axios";
@@ -19,19 +20,19 @@ const Contact = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setSuccess(false);
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/messages`, formData);
+      await axios.post(`${API_BASE_URL}/messages`, formData);
       trackEvent("generate_lead", { form_type: "contact" });
       setSuccess(true);
       setFormData({
@@ -41,7 +42,7 @@ const Contact = () => {
         message: "",
       });
     } catch (error) {
-      console.error(error);
+      alert(error instanceof Error ? error.message : "Unable to send your question. Please try again.");
       setSuccess(false);
     } finally {
       setLoading(false);

@@ -1,23 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Phone, Mail, ChevronDown } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+import { Menu, X } from 'lucide-react';
+import { useLanguage } from '../contexts/useLanguage';
 import { trackEvent } from '../utils/analytics';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
-  const languages = [
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'zh', name: '中文', flag: '🇨🇳' },
-  ];
 
-  const currentLanguage = languages.find(lang => lang.code === language);
 
   const navigation = [
     { name: t('home'), href: '/' },
@@ -40,7 +33,7 @@ const Navbar = () => {
               <Link to="/" className="flex items-center space-x-2">
                 <div className="w-13 h-13  rounded-full flex items-center justify-center">
                   <img
-                    src="https://res.cloudinary.com/dcgfwnzzr/image/upload/v1760970811/calmrest_logo_vbuoxu.png"
+                    src="https://res.cloudinary.com/dcgfwnzzr/image/upload/f_auto,q_auto,c_limit,w_1600/v1760970811/calmrest_logo_vbuoxu.png"
                     alt="Calm Rest logo"
                     className="w-10 h-10 object-cover rounded-full"
                   />

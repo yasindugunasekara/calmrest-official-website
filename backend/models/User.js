@@ -5,8 +5,10 @@ const userSchema = new mongoose.Schema(
     firstName: { type: String, required: function() { return this.provider !== "google"; } },
     lastName: { type: String, required: function() { return this.provider !== "google"; } },
     country: { type: String, required: function() { return this.provider !== "google"; } },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: function() { return this.provider !== "google"; } }, // required only for normal signup
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxLength: 254 },
+    tokenVersion: { type: Number, default: 0 },
+    googleUid: { type: String },
+    password: { select: false, type: String, required: function() { return this.provider !== "google"; } }, // required only for normal signup
     role: { type: String, enum: ["user", "admin"], default: "user" },
     provider: { type: String, enum: ["local", "google"], default: "local" },
   },

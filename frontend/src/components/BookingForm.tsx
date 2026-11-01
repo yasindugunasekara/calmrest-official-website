@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { API_BASE_URL, apiFetch } from "../lib/api";
+import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   User,
   Mail,
@@ -8,8 +9,6 @@ import {
   Home,
   MessageSquare,
   ArrowRight,
-  ShieldCheck,
-  Clock,
   Lock,
   ChevronDown
 } from "lucide-react";
@@ -23,19 +22,24 @@ interface Room {
 }
 
 const BookingForm: React.FC = () => {
-  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [submitting,setSubmitting] = useState(false);
+  const [feedback,setFeedback] = useState("");
+  const requestKey = useRef(crypto.randomUUID());
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
+  const [checkIn, setCheckIn] = useState(params.get("checkIn") || "");
+  const [checkOut, setCheckOut] = useState(params.get("checkOut") || "");
   const [guests, setGuests] = useState(2);
   const [roomType, setRoomType] = useState("");
   const [specialRequest, setSpecialRequest] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [pricePerNight, setPricePerNight] = useState(0);
-  const [nights, setNights] = useState(0);
-  const [totalPrice, setTotalPrice] = useState(0);
+  const selectedRoom=rooms.find(room=>room.name===roomType);
+  const pricePerNight=selectedRoom?.price || 0;
+  const rawNights=(Date.parse(checkOut)-Date.parse(checkIn))/86400000;
+  const nights=Number.isFinite(rawNights) && rawNights>0 ? rawNights : 0;
+  const totalPrice=Math.round(nights*pricePerNight*100)/100;
   const [isGuestsOpen, setIsGuestsOpen] = useState(false);
   const [isRoomTypeOpen, setIsRoomTypeOpen] = useState(false);
 
@@ -67,6 +71,7 @@ const BookingForm: React.FC = () => {
 
   const selectRoomTypeOption = (name: string) => {
     setRoomType(name);
+    setGuests(value=>Math.min(value,rooms.find(room=>room.name===name)?.guests || 1));
     setIsRoomTypeOpen(false);
   };
 
@@ -74,53 +79,28 @@ const BookingForm: React.FC = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/rooms`);
+        const res = await apiFetch(`${API_BASE_URL}/rooms`);
         const data: Room[] = await res.json();
         setRooms(data);
 
         if (data.length > 0) {
-          setRoomType(data[0].name);
-          setPricePerNight(data[0].price);
+          const chosen=data.find(room=>room._id===params.get("room")) || data[0];
+          setRoomType(chosen.name);
+          setGuests(value=>Math.min(value,chosen.guests));
         }
-      } catch (err) {
-        console.error("Error fetching rooms:", err);
+      } catch {
+        setFeedback("Rooms could not be loaded. Please refresh and try again.");
       }
     };
     fetchRooms();
-  }, []);
-
-  // Update pricePerNight and clamp guests when roomType changes
-  useEffect(() => {
-    const selectedRoom = rooms.find((room) => room.name === roomType);
-    if (selectedRoom) {
-      setPricePerNight(selectedRoom.price);
-      if (guests > selectedRoom.guests) {
-        setGuests(selectedRoom.guests);
-      }
-    } else {
-      setPricePerNight(0);
-    }
-  }, [roomType, rooms, guests]);
-
-  // Calculate total price & nights when dates or pricePerNight change
-  useEffect(() => {
-    if (checkIn && checkOut && pricePerNight > 0) {
-      const checkInDate = new Date(checkIn);
-      const checkOutDate = new Date(checkOut);
-      const diffTime = checkOutDate.getTime() - checkInDate.getTime();
-      const n = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      setNights(n > 0 ? n : 0);
-      setTotalPrice(n > 0 ? n * pricePerNight : 0);
-    } else {
-      setNights(0);
-      setTotalPrice(0);
-    }
-  }, [checkIn, checkOut, pricePerNight]);
+  }, [params]);
 
   // Submit booking form
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if(submitting) return;
+    if(!roomType || nights < 1 || !firstName.trim() || !lastName.trim()) {setFeedback("Choose a room, enter your name, and select a valid stay.");return;}
+    setSubmitting(true);setFeedback("");
 
     const selectedRoom = rooms.find((r) => r.name === roomType);
     trackEcommerceEvent("begin_checkout", selectedRoom ? [selectedRoom] : [], {
@@ -136,25 +116,27 @@ const BookingForm: React.FC = () => {
       checkOut,
       guests,
       roomType,
+      roomId: selectedRoom?._id,
       specialRequest,
       totalPrice, // store calculated price
     };
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/bookings`, {
+      const res = await apiFetch(`${API_BASE_URL}/bookings`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": requestKey.current },
         body: JSON.stringify(bookingData),
       });
 
       const data = await res.json();
       if (data.success) {
         trackEcommerceEvent("purchase", selectedRoom ? [selectedRoom] : [], {
-          transaction_id: data.bookingId || "temp_id_" + Date.now(),
+          transaction_id: data.bookingId,
           value: totalPrice,
           currency: "USD",
         });
-        alert("Booking submitted successfully!");
+        setFeedback(`Booking ${data.booking.status === "Confirmed" ? "confirmed" : "request received"}. Reference: ${data.bookingId}. Total: $${data.booking.totalPrice}.`);
+        requestKey.current=crypto.randomUUID();
         setFirstName("");
         setLastName("");
         setEmail("");
@@ -163,18 +145,17 @@ const BookingForm: React.FC = () => {
         setGuests(2);
         setRoomType(rooms[0]?.name || "");
         setSpecialRequest("");
-        setTotalPrice(0);
-        navigate(-1);
+
+
       } else {
-        alert("Failed to submit booking: " + data.error);
+        setFeedback(data.error || "Unable to submit booking.");
       }
     } catch (err) {
       console.error("Error submitting booking:", err);
-      alert("Something went wrong. Please try again.");
-    }
+      setFeedback(err instanceof Error ? err.message : "Please try again.");
+    } finally {setSubmitting(false); }
   };
 
-  const selectedRoom = rooms.find((room) => room.name === roomType);
   const maxGuests = selectedRoom ? selectedRoom.guests : 8;
   const guestOptions = Array.from({ length: maxGuests }, (_, i) => i + 1);
 
@@ -183,6 +164,7 @@ const BookingForm: React.FC = () => {
       onSubmit={handleBookingSubmit}
       className="w-full max-w-6xl mx-auto py-4 px-2"
     >
+      {feedback && <p role="status" className="p-4 mb-4 rounded-xl bg-amber-50 text-slate-900 border border-amber-200">{feedback}</p>}
       {/* Form Header */}
       <div className="text-center mb-5">
         <h3 className="text-2xl sm:text-3xl font-bold text-navy font-serif tracking-wide">Book Your Luxury Stay</h3>
@@ -190,10 +172,10 @@ const BookingForm: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Columns: Inputs Grid (Span 2) */}
         <div className="lg:col-span-2 space-y-4">
-          
+
           {/* Row 1: First Name & Last Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3">
@@ -244,7 +226,7 @@ const BookingForm: React.FC = () => {
               </div>
             </div>
 
-            <div 
+            <div
               onClick={toggleGuestsDropdown}
               className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3 pr-9 cursor-pointer select-none"
             >
@@ -261,7 +243,7 @@ const BookingForm: React.FC = () => {
 
               {/* Dropdown Options Popup */}
               {isGuestsOpen && (
-                <div 
+                <div
                   className="absolute left-0 right-0 top-full mt-2 bg-white border border-gold/15 shadow-xl rounded-xl py-1 z-50 max-h-48 overflow-y-auto"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -323,7 +305,7 @@ const BookingForm: React.FC = () => {
           </div>
 
           {/* Row 4: Room Type selection */}
-          <div 
+          <div
             onClick={toggleRoomTypeDropdown}
             className="relative rounded-xl border border-gray-200 transition-all duration-300 focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20 bg-white px-4 py-1.5 flex items-center space-x-3 pr-9 cursor-pointer select-none"
           >
@@ -340,7 +322,7 @@ const BookingForm: React.FC = () => {
 
             {/* Dropdown Options Popup */}
             {isRoomTypeOpen && (
-              <div 
+              <div
                 className="absolute left-0 right-0 top-full mt-2 bg-white border border-gold/15 shadow-xl rounded-xl py-1 z-50 max-h-48 overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -380,7 +362,7 @@ const BookingForm: React.FC = () => {
         {/* Right Column: Booking Summary Sidebar (Span 1) */}
         <div className="lg:col-span-1 lg:sticky lg:top-8 self-start">
           <div className="bg-cream/40 border border-gold/15 rounded-2xl p-4 md:p-5 space-y-4 shadow-sm flex flex-col justify-between">
-            
+
             <div className="space-y-4">
               {/* Summary Header */}
               <div className="border-b border-gray-200/60 pb-3">
@@ -438,9 +420,10 @@ const BookingForm: React.FC = () => {
             <div>
               <button
                 type="submit"
+                disabled={submitting || !rooms.length}
                 className="w-full bg-gold hover:bg-opacity-95 text-white py-3 rounded-xl transition-all duration-300 font-bold uppercase tracking-wider text-xs sm:text-sm shadow-md shadow-gold/25 mt-4 hover:-translate-y-0.5 focus:outline-none flex items-center justify-center space-x-2"
               >
-                <span>Confirm Booking</span>
+                <span>{submitting ? "Submitting…" : "Request Booking"}</span>
               </button>
 
               {/* Secure Booking Notice */}

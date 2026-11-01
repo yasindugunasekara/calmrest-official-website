@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { User, Mail, MessageSquare, Trash2, CheckSquare, Reply, AlertCircle } from 'lucide-react';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api");
+import { apiFetch } from "../../services/api";
+import { useState, useEffect } from 'react';
+import { Mail, Trash2, Reply, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const formatTimeAgo = (dateString: string) => {
@@ -37,12 +39,12 @@ export default function Messages() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
-    const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;
+
 
     useEffect(() => {
         const fetchMessages = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/messages`);
+                const response = await apiFetch(`${API_BASE_URL}/messages`);
                 if (!response.ok) {
                     const errorBody = await response.text();
                     console.error("Server responded with an error:", response.status, errorBody);
@@ -62,10 +64,12 @@ export default function Messages() {
         fetchMessages();
     }, []);
 
-    const markAsRead = (id: string) => {
-        setMessages(prev =>
-            prev.map(m => m._id === id ? { ...m, isRead: true } : m)
-        );
+    const markAsRead = async (id: string) => {
+        try {
+            const response = await apiFetch(`${API_BASE_URL}/messages/${id}`, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isRead:true})});
+            if(!response.ok) throw new Error('Unable to mark message as read');
+            setMessages(prev=>prev.map(m=>m._id===id?{...m,isRead:true}:m));
+        } catch { alert('Unable to update message. Please try again.'); }
     };
 
     const confirmDelete = (msg: Message) => {
@@ -76,7 +80,7 @@ export default function Messages() {
     const handleDelete = async () => {
         if (!selectedMessage) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/messages/${selectedMessage._id}`, {
+            const response = await apiFetch(`${API_BASE_URL}/messages/${selectedMessage._id}`, {
                 method: "DELETE",
             });
             const result = await response.json();

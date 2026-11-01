@@ -1,73 +1,40 @@
-const express = require("express");
-const Booking = require("../models/Booking"); // Your Booking model
-const { sendBookingConfirmation } = require("../config/mailer");
-const router = express.Router();
-
-const authMiddleware = require("../middleware/authMiddleware");
-const adminMiddleware = require("../middleware/adminMiddleware");
-
-// Create new booking
-router.post("/", async (req, res) => {
-  try {
-    const booking = new Booking(req.body);
-    await booking.save();
-
-    // Send confirmation email asynchronously (does not block client response)
-    sendBookingConfirmation(booking);
-
-    // ✅ Return success message and booking data
-    res.status(201).json({
-      success: true,      // frontend expects this
-      booking,            // optional: return saved booking object
-    });
-  } catch (err) {
-    // ✅ Return error message properly
-    res.status(400).json({
-      success: false,     // frontend expects this
-      error: err.message,
-    });
-  }
+const router=require('express').Router();
+const mongoose=require('mongoose');
+const Booking=require('../models/Booking');
+const Settings=require('../models/Settings');
+const auth=require('../middleware/authMiddleware'),admin=require('../middleware/adminMiddleware');
+const v=require('../lib/validation');
+const {reserve}=require('../lib/availability');
+const {bookingEmails,deliverPending}=require('../config/mailer');
+router.post('/',async(req,res)=>{
+ const firstName=v.text(req.body.firstName,'First name',80),lastName=v.text(req.body.lastName,'Last name',80),email=v.email(req.body.email),specialRequest=v.text(req.body.specialRequest,'Special requests',2000,false);
+ v.dates(req.body.checkIn,req.body.checkOut);
+ const key=req.headers['idempotency-key'] ? v.text(req.headers['idempotency-key'],'Request key',100) : require('node:crypto').randomUUID();
+ if(!/^[a-zA-Z0-9-]{16,100}$/.test(key)) v.fail('Invalid request key');
+ const settings=await Settings.findById('hotel').lean(); if(settings?.onlineBooking===false) v.fail('Online bookings are temporarily closed. Please contact the hotel.',503);
+ let booking;const session=await mongoose.startSession();
+ try { await session.withTransaction(async()=>{
+   const existing=await Booking.findOne({idempotencyKey:key}).session(session);
+   if(existing) { if(existing.email!==email) v.fail('Request key already used',409);booking=existing;return; }
+   const stay=await reserve(req.body,session);
+   [booking]=await Booking.create([{...stay,firstName,lastName,email,specialRequest,idempotencyKey:key,status:settings?.autoConfirm ? 'Confirmed':'Pending'}],{session});
+ }); } finally { await session.endSession(); }
+ await bookingEmails(booking);await deliverPending();
+ res.status(201).json({success:true,bookingId:booking._id,booking:{_id:booking._id,status:booking.status,totalPrice:booking.totalPrice}});
 });
-
-
-//delete booking
-router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const deletedBooking = await Booking.findByIdAndDelete(req.params.id);
-    if (!deletedBooking) {
-      return res.status(404).json({ success: false, error: "Booking not found" });
-    }
-    res.json({ success: true, message: "Booking deleted successfully ✅" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+router.get('/',auth,admin,async(req,res)=>res.json(await Booking.find().sort({createdAt:-1}).lean()));
+router.put('/:id',auth,admin,async(req,res)=>{
+ const id=v.id(req.params.id),status=v.text(req.body.status,'Status',30);
+ if(!['Pending','Confirmed','Checked In','Checked Out','Cancelled'].includes(status)) v.fail('Invalid booking status');
+ let booking;const session=await mongoose.startSession();
+ try { await session.withTransaction(async()=>{
+  booking=await Booking.findById(id).session(session);if(!booking) v.fail('Booking not found',404);
+  if(['Cancelled','Checked Out'].includes(booking.status) && status!==booking.status) v.fail('Closed bookings cannot be reopened. Create a new reservation.',409);
+  if(status==='Checked In' && (booking.checkIn>v.today() || booking.checkOut<=v.today())) v.fail('Check-in is outside the stay dates');
+  if(!['Cancelled','Checked Out'].includes(status)) await reserve(booking.toObject(),session,id);
+  booking.status=status;await booking.save({session});
+ }); } finally {await session.endSession();}
+ res.json({success:true,booking});
 });
-
-router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const bookings = await Booking.find().lean(); // lean() gives plain JS objects
-    const uniqueBookings = Array.from(new Map(bookings.map(b => [b._id.toString(), b])).values());
-    res.json(uniqueBookings);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Update booking status/details
-router.put("/:id", async (req, res) => {
-  try {
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      req.params.id,
-      req.body, 
-      { new: true }
-    );
-    if (!updatedBooking) {
-      return res.status(404).json({ success: false, error: "Booking not found" });
-    }
-    res.json({ success: true, booking: updatedBooking });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-module.exports = router;
+router.delete('/:id',auth,admin,async(req,res)=>{ const booking=await Booking.findByIdAndDelete(v.id(req.params.id));if(!booking) v.fail('Booking not found',404);res.json({success:true}); });
+module.exports=router;

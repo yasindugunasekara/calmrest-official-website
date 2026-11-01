@@ -1,3 +1,4 @@
+import { API_BASE_URL, apiFetch } from "../../lib/api";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../utils/analytics";
@@ -50,7 +51,7 @@ const Register: React.FC = () => {
       setLoading(true);
       setError("");
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users`, {
+      const res = await apiFetch(`${API_BASE_URL}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -82,7 +83,7 @@ const Register: React.FC = () => {
       }
     } catch (err) {
       console.error("Error:", err);
-      setError("Server error. Please try again later.");
+      setError(err instanceof Error ? err.message : "Server error. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -163,7 +164,7 @@ const Register: React.FC = () => {
 
           {/* Password */}
           <input
-            type="password"
+            type="password" minLength={12} maxLength={72}
             name="password"
             value={form.password}
             onChange={handleChange}
@@ -174,7 +175,7 @@ const Register: React.FC = () => {
 
           {/* Confirm Password */}
           <input
-            type="password"
+            type="password" minLength={12} maxLength={72}
             name="confirmPassword"
             value={form.confirmPassword}
             onChange={handleChange}

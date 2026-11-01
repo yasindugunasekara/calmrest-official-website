@@ -1,5 +1,5 @@
-import { Wifi, Car, Coffee, Eye, AirVent } from "lucide-react";
-import { ShowerHeadIcon, Space } from "lucide-react"; // check if these exist or replace
+import { Wifi, Car } from "lucide-react";
+import { ShowerHeadIcon } from "lucide-react"; // check if these exist or replace
 
 export const rooms = [
     {
@@ -43,7 +43,7 @@ export const rooms = [
       name: 'Air Conditioned',
       count: rooms.filter((r) => r.category === 'Air Conditioned').length,
     },
-    
+
     {
       id: 'family',
       name: 'Family',

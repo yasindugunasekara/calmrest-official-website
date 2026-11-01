@@ -1,58 +1,22 @@
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const User = require("../models/User");
-
-const router = express.Router();
-const authMiddleware = require("../middleware/authMiddleware");
-const adminMiddleware = require("../middleware/adminMiddleware");
-// Register User
-router.post("/", async (req, res) => {
-  try {
-    const { firstName, lastName, country, email, password, role } = req.body;
-
-    // check if email already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: "Email already registered" });
-    }
-
-    // hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      firstName,
-      lastName,
-      country,
-      email,
-      password: hashedPassword,
-      role: role || "user",
-    });
-
-    await newUser.save();
-    res.status(201).json({ message: "User registered successfully", user: newUser });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+const router=require('express').Router();
+const bcrypt=require('bcryptjs');
+const User=require('../models/User');
+const auth=require('../middleware/authMiddleware');
+const admin=require('../middleware/adminMiddleware');
+const v=require('../lib/validation');
+const {publicUser}=require('../lib/session');
+async function register(req,res,role) {
+ const data={firstName:v.text(req.body.firstName,'First name',80),lastName:v.text(req.body.lastName,'Last name',80),country:v.text(req.body.country,'Country',80),email:v.email(req.body.email),password:await bcrypt.hash(v.password(req.body.password),12),role,provider:'local'};
+ if(await User.exists({email:data.email})) v.fail('Email already registered',409);
+ const user=await User.create(data);res.status(201).json({message:'User registered successfully',user:publicUser(user)});
+}
+router.post('/',async(req,res)=>{ if(req.body.role && req.body.role!=='user') v.fail('Admin registration requires an administrator',403); await register(req,res,'user'); });
+router.post('/admin',auth,admin,(req,res)=>register(req,res,'admin'));
+router.get('/',auth,admin,async(req,res)=>res.json(await User.find().select('-password').sort({createdAt:-1}).lean()));
+router.delete('/:id',auth,admin,async(req,res)=>{
+ const id=v.id(req.params.id); if(id===req.user.id) v.fail('You cannot delete your own administrator account',409);
+ const user=await User.findById(id);if(!user) v.fail('User not found',404);
+ if(user.role==='admin') v.fail('Administrator accounts must be managed by the database owner',403);
+ await user.deleteOne();res.json({success:true,message:'User deleted'});
 });
-
-//delete user
-router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: "User deleted successfully ✅" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get All Users (Admin use)
-router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const users = await User.find().select("-password"); // hide password
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-module.exports = router;
+module.exports=router;
