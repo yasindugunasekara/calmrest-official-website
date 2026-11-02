@@ -32,11 +32,11 @@ function transporter() {
     socketTimeout: 10000,
   });
 }
-async function queue(key, to, subject, text, replyTo) {
+async function queue(key, to, subject, text, replyTo, options = {}) {
   await EmailJob.updateOne(
     { key },
     { $setOnInsert: { key, to, subject, text, replyTo } },
-    { upsert: true },
+    { upsert: true, ...options },
   );
 }
 async function deliverPending() {
@@ -127,14 +127,18 @@ ${message.message}`,
     message.email,
   );
 }
-async function bookingStatusEmail(booking) {
-  const settings = await Settings.findById("hotel").lean();
-  if (settings?.emailNotifications === false) return;
+async function bookingStatusEmail(booking, { force = false, session } = {}) {
+  const settings = await Settings.findById("hotel")
+    .session(session || null)
+    .lean();
+  if (!force && settings?.emailNotifications === false) return;
   await queue(
     `booking-status-${booking._id}-${booking.status}`,
     booking.email,
     `Reservation ${booking.status.toLowerCase()} — Calm Rest`,
-    `Hello ${booking.firstName},\n\nYour reservation status is now ${booking.status}.\nReference: ${booking._id}\nRoom: ${booking.roomType}\nCheck-in: ${booking.checkIn}\nCheck-out: ${booking.checkOut}\nTotal stay: USD ${booking.totalPrice}\n\nFor questions or changes, contact calmrestmidigama2017@gmail.com.`,
+    `Hello ${booking.firstName},\n\nYour reservation status is now ${booking.status}.\nReference: ${booking._id}\nRoom: ${booking.roomType}\nCheck-in: ${booking.checkIn}\nCheck-out: ${booking.checkOut}\nGuests: ${booking.guests}\nNights: ${booking.nights || Math.round((Date.parse(booking.checkOut)-Date.parse(booking.checkIn))/86400000)}\nNightly rate: USD ${booking.pricePerNight ?? 'Not recorded'}\nTotal stay: USD ${booking.totalPrice}\n\nFor questions or changes, contact calmrestmidigama2017@gmail.com.`,
+    undefined,
+    session ? { session } : {},
   );
 }
 module.exports = {

@@ -68,3 +68,8 @@ Global scroll snapping has been removed. Login/register/recovery pages use natur
 ### Mobile reservations calendar
 
 Admin reservations use a Monday-first monthly calendar and responsive guest cards. Tap a day to see stay and departure activity, then a card to view contact details, stay value, requests, and editable status. Upcoming, Past & cancelled, and All bookings remain searchable and filterable by room. Cancellation/checkout records stay in history; departure day is not counted as a reserved night. The admin mobile shell includes persistent bottom navigation and compact headers; guest accounts use cards on small screens.
+
+
+### Claude booking confirmation
+
+Claude now has one scoped write operation, `confirm_booking_and_email`, in addition to six read-only reports. The owner must explicitly request confirmation and email for the identified reservation. Exact ID, email and dates are checked; only pending/confirmed future or current stays can be processed. Availability, booking status, integration audit fields and a deduplicated email job are handled in a MongoDB transaction. Failed email delivery remains retryable and is reported separately from booking confirmation. Other hotel writes remain unavailable through this connector.

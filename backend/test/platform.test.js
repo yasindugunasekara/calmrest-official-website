@@ -188,3 +188,26 @@ test('Claude connector rejects missing credentials, reports read-only data and s
  await call('post','/api/integrations/rooms',token).send({}).expect(404);
  await Credential.updateOne({_id:'claude-desktop'},{$set:{enabled:false}});await call('get','/api/integrations/dashboard',token).expect(401);
 });
+
+test('Claude confirmation is scoped, requires exact booking approval and sends one durable email',async()=>{
+ const Credential=require('../models/IntegrationCredential'),Booking=require('../models/Booking'),EmailJob=require('../models/EmailJob');const token='ab'.repeat(32);
+ await Credential.updateOne({_id:'claude-desktop'},{$set:{enabled:true,scopes:[]}});
+ const booking=await Booking.create(stay({checkIn:date(80),checkOut:date(82),status:'Pending',pricePerNight:125,totalPrice:250,nights:2}));
+ const path='/api/integrations/bookings/'+booking._id+'/confirm';const body={expectedEmail:booking.email,expectedCheckIn:booking.checkIn,expectedCheckOut:booking.checkOut,userApproved:true,sendConfirmationEmail:true};
+ await call('post',path).send(body).expect(401);await call('post',path,token).send(body).expect(403);
+ await Credential.updateOne({_id:'claude-desktop'},{$set:{scopes:['bookings:confirm']}});
+ await call('post',path,token).send({...body,userApproved:false}).expect(400);
+ await call('post',path,token).send({...body,expectedEmail:'someoneelse@example.test'}).expect(409);
+ assert.equal((await Booking.findById(booking._id)).status,'Pending');
+ const first=await call('post',path,token).send(body).expect(200);assert.equal(first.body.booking.status,'Confirmed');assert.equal(first.body.email.status,'sent');
+ await call('post',path,token).send(body).expect(200);
+ assert.equal(await EmailJob.countDocuments({key:`booking-status-${booking._id}-Confirmed`}),1);
+ assert.equal((await Booking.findById(booking._id)).confirmedByIntegration,'claude-desktop');
+ await Booking.updateOne({_id:booking._id},{$set:{status:'Cancelled'}});await call('post',path,token).send(body).expect(409);
+});
+test('Claude confirmation preserves confirmed booking and reports failed email for retry',async()=>{
+ const Booking=require('../models/Booking');const booking=await Booking.create(stay({checkIn:date(84),checkOut:date(85),status:'Pending'}));
+ nodemailer.createTransport=()=>({sendMail:async()=>{throw Error('Simulated SMTP outage');}});
+ const body={expectedEmail:booking.email,expectedCheckIn:booking.checkIn,expectedCheckOut:booking.checkOut,userApproved:true,sendConfirmationEmail:true};
+ const response=await call('post','/api/integrations/bookings/'+booking._id+'/confirm','ab'.repeat(32)).send(body).expect(200);assert.equal(response.body.booking.status,'Confirmed');assert.equal(response.body.email.status,'failed');
+});

@@ -5,6 +5,7 @@ module.exports = mongoose.model(
     {
       _id: String,
       tokenHash: { type: String, required: true, select: false },
+      scopes: {type:[String],default:[]},
       enabled: { type: Boolean, default: true },
       lastUsedAt: Date,
     },

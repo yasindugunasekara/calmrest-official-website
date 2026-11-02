@@ -23,7 +23,80 @@ router.use(async (req, res, next) => {
     return res
       .status(401)
       .json({ error: "Hotel connector credential is invalid or revoked" });
+  req.integration = credential;
   next();
+});
+router.post("/bookings/:id/confirm", async (req, res) => {
+  if (!req.integration.scopes.includes("bookings:confirm"))
+    v.fail("This connector is not permitted to confirm bookings", 403);
+  if (req.body.userApproved !== true || req.body.sendConfirmationEmail !== true)
+    v.fail("Explicit approval to confirm and email is required");
+  const id = v.id(req.params.id),
+    expectedEmail = v.email(req.body.expectedEmail);
+  v.date(req.body.expectedCheckIn);
+  v.date(req.body.expectedCheckOut);
+  const session = await Booking.startSession();
+  let booking;
+  try {
+    await session.withTransaction(async () => {
+      booking = await Booking.findById(id).session(session);
+      if (!booking) v.fail("Booking not found", 404);
+      if (
+        booking.email !== expectedEmail ||
+        booking.checkIn !== req.body.expectedCheckIn ||
+        booking.checkOut !== req.body.expectedCheckOut
+      )
+        v.fail(
+          "Booking details changed or do not match. Review the reservation before confirming.",
+          409,
+        );
+      if (!["Pending", "Confirmed"].includes(booking.status))
+        v.fail("Only pending or confirmed reservations can be confirmed", 409);
+      if (booking.checkOut <= v.today())
+        v.fail("An expired stay cannot be confirmed", 409);
+      await require("../lib/availability").reserve(
+        booking.toObject(),
+        session,
+        id,
+      );
+      if (booking.status === "Pending") {
+        booking.status = "Confirmed";
+        booking.confirmedByIntegration = req.integration._id;
+        booking.confirmedAt = new Date();
+        await booking.save({ session });
+      }
+      await require("../config/mailer").bookingStatusEmail(booking, {
+        force: true,
+        session,
+      });
+    });
+  } finally {
+    await session.endSession();
+  }
+  await require("../config/mailer").deliverPending();
+  const job = await require("../models/EmailJob")
+    .findOne({ key: `booking-status-${id}-Confirmed` })
+    .lean();
+  res.json({
+    success: true,
+    booking: {
+      id: booking._id,
+      status: booking.status,
+      email: booking.email,
+      room: booking.roomType,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      totalPrice: booking.totalPrice,
+    },
+    email: {
+      status: job?.status || "unknown",
+      sentAt: job?.sentAt || null,
+      note:
+        job?.status === "sent"
+          ? "SMTP accepted the confirmation email; inbox delivery is not guaranteed."
+          : "Confirmation email remains queued or failed. Retry delivery from admin settings.",
+    },
+  });
 });
 router.get("/:resource", async (req, res) => {
   const resource = req.params.resource;

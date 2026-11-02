@@ -3,6 +3,8 @@ const schema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
     phone: { type: String, maxLength: 30 },
+    confirmedByIntegration: String,
+    confirmedAt: Date,
     firstName: { type: String, required: true, trim: true, maxLength: 80 },
     lastName: { type: String, required: true, trim: true, maxLength: 80 },
     email: { type: String, required: true, lowercase: true },
