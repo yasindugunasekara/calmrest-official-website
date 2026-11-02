@@ -134,21 +134,21 @@ export default function Messages() {
                                 }`}
                             >
                                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                                    <div className="flex items-start gap-4">
+                                    <div className="flex items-start gap-3 min-w-0">
                                         
                                         {/* Avatar initials */}
                                         <div className="w-10 h-10 rounded-lg bg-gold-100/50 border border-gold-200/20 flex items-center justify-center text-gold-700 font-bold text-[11px] uppercase shadow-inner flex-shrink-0 mt-0.5">
                                             {message.fullName ? message.fullName[0] : "G"}
                                         </div>
 
-                                        <div className="space-y-1">
+                                        <div className="space-y-1 min-w-0">
                                             <div className="flex items-center gap-2">
                                                 <p className="text-xs font-bold text-gray-800">{message.fullName}</p>
                                                 {!message.isRead && (
                                                     <span className="w-2 h-2 bg-gold rounded-full" title="New Message" />
                                                 )}
                                             </div>
-                                            <p className="text-[10px] text-gray-400 font-semibold flex items-center gap-1">
+                                            <p className="text-xs text-gray-500 font-semibold flex items-center gap-1 break-all">
                                                 <Mail className="w-3.5 h-3.5 text-gray-400" />
                                                 {message.email}
                                             </p>

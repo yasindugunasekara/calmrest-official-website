@@ -360,7 +360,47 @@ export default function Dashboard() {
             />
           </label>
         </div>
-        <div className="overflow-x-auto">
+        <div className="sm:hidden space-y-3">
+          {rooms.map((room) => (
+            <article key={room._id} className="border rounded-xl p-3">
+              <h3 className="font-semibold text-sm">{room.name}</h3>
+              <p className="text-xs text-slate-500 mb-3">
+                {room.inventory || 1} physical rooms
+              </p>
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: 7 }, (_, i) => {
+                  const date = new Date(
+                    Date.parse(inventoryDate) + i * 86400000,
+                  )
+                    .toISOString()
+                    .slice(0, 10);
+                  const count = bookings.filter(
+                    (b) =>
+                      !["Cancelled", "Checked Out"].includes(b.status || "") &&
+                      (b.roomId === room._id ||
+                        (!b.roomId && b.roomType === room.name)) &&
+                      b.checkIn <= date &&
+                      b.checkOut > date,
+                  ).length;
+                  const free = Math.max(0, (room.inventory || 1) - count);
+                  return (
+                    <div key={date} className="text-center">
+                      <span className="text-[10px] text-slate-500">
+                        {date.slice(8)}
+                      </span>
+                      <span
+                        className={`block p-1.5 rounded mt-1 text-xs ${free ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-700"}`}
+                      >
+                        {free}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
               <tr>
@@ -742,7 +782,34 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="sm:hidden divide-y">
+          {[...bookings]
+            .sort((a, b) => b.checkIn.localeCompare(a.checkIn))
+            .slice(0, 5)
+            .map((b) => (
+              <button
+                key={b._id}
+                className="block w-full text-left p-4"
+                onClick={() =>
+                  navigate("/bookings?search=" + encodeURIComponent(b._id))
+                }
+              >
+                <div className="flex flex-wrap justify-between gap-2">
+                  <strong className="text-sm">
+                    {b.firstName} {b.lastName}
+                  </strong>
+                  <span className="text-xs bg-stone-100 rounded-full px-2 py-1">
+                    {b.status}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500 mt-2">{b.roomType}</p>
+                <p className="text-xs text-slate-500 mt-2">
+                  {b.checkIn} → {b.checkOut}
+                </p>
+              </button>
+            ))}
+        </div>
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-50 bg-gray-50/50">
@@ -765,7 +832,7 @@ export default function Dashboard() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {bookings.length > 0 ? (
-                bookings
+                [...bookings]
                   .sort(
                     (a, b) =>
                       new Date(b.checkIn).getTime() -

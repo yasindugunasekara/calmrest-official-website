@@ -95,7 +95,7 @@ export default function UsersPage() {
             No administrator accounts exist in the database.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div><div className="md:hidden divide-y">{users.map(user=><article key={user._id} className="p-4 space-y-3"><div className="flex flex-wrap justify-between gap-2"><strong>{user.firstName} {user.lastName}</strong><span className="text-xs rounded-full bg-stone-100 px-3 py-1">{user.role}</span></div><p className="text-sm break-all">{user.email}</p><div className="flex justify-between gap-2 items-center"><span className="text-sm text-slate-500">{user.country || 'Country not recorded'}</span>{user.role!=='admin'&&<button className="p-3 text-rose-700 text-sm" onClick={()=>confirmDelete(user)}>Remove guest</button>}</div></article>)}</div><div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50">
@@ -159,7 +159,7 @@ export default function UsersPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </div></div>
         )}
       </div>
 
@@ -181,7 +181,7 @@ export default function UsersPage() {
               </div>
               
               <p className="text-gray-500 text-xs leading-relaxed mb-6">
-                Are you sure you want to delete administrator <strong className="text-gray-800 font-semibold">{selectedUser.firstName} {selectedUser.lastName}</strong>? This user will lose system dashboard permissions immediately.
+                Are you sure you want to delete guest <strong className="text-gray-800 font-semibold">{selectedUser.firstName} {selectedUser.lastName}</strong>? This guest will lose access to their account. Booking records are retained.
               </p>
               
               <div className="flex justify-end gap-3">

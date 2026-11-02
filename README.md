@@ -63,3 +63,8 @@ Customers must sign in and verify their email before submitting any new reservat
 The Calm Rest Hotel local MCP connector is in `connectors/calm-rest-hotel`. It exposes six read-only operational tools with a dedicated hashed integration credential. See its README for installation, pagination, reporting semantics, and revocation. No connector tool can change hotel records. Guest messages are untrusted data. Financial reports identify reservation value separately from collected revenue, which this platform does not track.
 
 Global scroll snapping has been removed. Login/register/recovery pages use naturally scrolling layouts, mobile-friendly text entry and touch targets. The desktop login image is absolutely positioned so its source dimensions cannot enlarge the page.
+
+
+### Mobile reservations calendar
+
+Admin reservations use a Monday-first monthly calendar and responsive guest cards. Tap a day to see stay and departure activity, then a card to view contact details, stay value, requests, and editable status. Upcoming, Past & cancelled, and All bookings remain searchable and filterable by room. Cancellation/checkout records stay in history; departure day is not counted as a reserved night. The admin mobile shell includes persistent bottom navigation and compact headers; guest accounts use cards on small screens.
